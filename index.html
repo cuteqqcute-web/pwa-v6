@@ -1068,11 +1068,19 @@ function shareAll() {
   }
   Promise.all(pr).then(function(fs) {
     if (navigator.share) {
+      var sharePromise;
       if (navigator.canShare && navigator.canShare({files:fs})) {
-        navigator.share({files:fs});
+        sharePromise = navigator.share({files:fs});
       } else {
-        for (var j = 0; j < fs.length; j++) navigator.share({files:[fs[j]]});
+        sharePromise = Promise.resolve();
+        for (var j = 0; j < fs.length; j++) sharePromise = sharePromise.then(function(){ return navigator.share({files:[fs[j]]}); });
       }
+      sharePromise.then(function(){
+        _photos = [];
+        refreshSummaryPage();
+      }).catch(function(){
+        // User cancelled share, keep photos
+      });
     } else {
       for (var k = 0; k < _photos.length; k++) {
         var a = document.createElement('a');
@@ -1080,9 +1088,9 @@ function shareAll() {
         a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
       }
+      _photos = [];
+      refreshSummaryPage();
     }
-    _photos = [];
-    refreshSummaryPage();
   }).catch(function(){ alert('儲存失敗，請重試'); });
 }
 
