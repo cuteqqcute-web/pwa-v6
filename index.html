@@ -266,6 +266,12 @@
       <div id="photoSummaryList"></div>
     </div>
 
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <button class="wizard-prev-btn" onclick="goToPage(2)" style="flex:1;">← 回拍照</button>
+      <label for="albumInput4" class="wizard-prev-btn" style="flex:1;text-align:center;cursor:pointer;">🖼️ 從相簿選取</label>
+      <input type="file" accept="image/*" id="albumInput4" style="display:none;">
+    </div>
+
     <div class="export-actions" id="exportActions" style="display:flex;">
       <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
       <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
@@ -274,10 +280,6 @@
       <button class="export-btn" id="generateReportBtn" style="background:#ff9500;flex:1;">📊 產出日巡報告</button>
     </div>
     <div class="report-status" id="reportStatus"></div>
-
-    <div style="padding:12px 0 8px;display:flex;justify-content:center;">
-      <button class="wizard-prev-btn" onclick="goToPage(2)">← 回拍照</button>
-    </div>
 
     <footer>pwa-v6</footer>
   </div>
@@ -1290,8 +1292,10 @@ function applyCrop(cb) {
 function bindButtons() {
   var ci = document.getElementById('cameraInput');
   var ai = document.getElementById('albumInput');
+  var ai4 = document.getElementById('albumInput4');
   if (ci) ci.addEventListener('change', onFileInput);
   if (ai) ai.addEventListener('change', onFileInput);
+  if (ai4) ai4.addEventListener('change', onFileInput);
 
   var sb = document.getElementById('shareAllBtn');
   var sv = document.getElementById('saveAllBtn');
