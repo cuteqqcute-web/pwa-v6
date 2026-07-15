@@ -273,8 +273,7 @@
     </div>
 
     <div class="export-actions" id="exportActions" style="display:flex;">
-      <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
-      <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
+      <button class="export-btn share" id="shareAllBtn">💾 儲存/分享全部</button>
     </div>
     <div class="export-actions" id="reportActions" style="display:flex;">
       <button class="export-btn" id="generateReportBtn" style="background:#ff9500;flex:1;">📊 產出日巡報告</button>
@@ -1058,25 +1057,23 @@ function shareAll() {
     })(_photos[i]);
   }
   Promise.all(pr).then(function(fs) {
-    if (navigator.canShare && navigator.canShare({files:fs})) navigator.share({files:fs});
-    else if (navigator.share && fs.length === 1) navigator.share({files:fs});
-    else alert('此瀏覽器不支援一次分享多張照片，請個別下載');
+    if (navigator.share) {
+      if (navigator.canShare && navigator.canShare({files:fs})) {
+        navigator.share({files:fs});
+      } else {
+        for (var j = 0; j < fs.length; j++) navigator.share({files:[fs[j]]});
+      }
+    } else {
+      for (var k = 0; k < _photos.length; k++) {
+        var a = document.createElement('a');
+        a.href = _photos[k].dataUrl;
+        a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+    }
     _photos = [];
     refreshSummaryPage();
-  }).catch(function(){ alert('分享失敗，請使用儲存功能'); _photos = []; refreshSummaryPage(); });
-}
-
-function saveAll() {
-  for (var i = 0; i < _photos.length; i++) {
-    var a = document.createElement('a');
-    a.href = _photos[i].dataUrl;
-    a.download = _photos[i].fileName || ('photo_' + (i+1) + '.jpg');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  _photos = [];
-  refreshSummaryPage();
+  }).catch(function(){ alert('儲存失敗，請重試'); });
 }
 
 // ============================================================
@@ -1226,7 +1223,7 @@ function addText() {
   if (!_cv) return;
   setTool(null);
   var t = prompt('請輸入文字：'); if (!t) return;
-  var tx = new fabric.IText(t, { left:_cv.width/2-40, top:_cv.height/2-15, fontSize:Math.max(+editorSize.value*10,24), fill:editorColor.value, fontFamily:'Arial,sans-serif' });
+  var tx = new fabric.IText(t, { left:_cv.width/2-40, top:_cv.height/2-15, fontSize:Math.max(+editorSize.value*12,28), fill:editorColor.value, fontFamily:'Arial,sans-serif' });
   _cv.add(tx); _cv.setActiveObject(tx); saveState();
 }
 
@@ -1307,9 +1304,7 @@ function bindButtons() {
   if (ai4) ai4.addEventListener('change', onFileInput);
 
   var sb = document.getElementById('shareAllBtn');
-  var sv = document.getElementById('saveAllBtn');
   if (sb) sb.addEventListener('click', shareAll);
-  if (sv) sv.addEventListener('click', saveAll);
 
   var rb = document.getElementById('generateReportBtn');
   if (rb) rb.addEventListener('click', generateReport);
