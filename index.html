@@ -899,34 +899,15 @@ function confirmClassify() {
   renderClassifyPhotoStrip();
   updateClassifyProgress();
 
-  // V6: Don't auto-advance. Show "繼續下一張" button instead.
-  var allDone = true;
-  for (var i = 0; i < _photos.length; i++) {
-    if (!_photos[i].classified) { allDone = false; break; }
-  }
-
+  // V6: Always show "繼續下一張" — never auto-jump to Step 4
   var btn = document.getElementById('confirmClassifyBtn');
 
-  if (allDone) {
-    // All classified — show completion
-    _currentPhotoIdx = -1;
-    document.getElementById('currentPhotoPreview').style.display = 'none';
-    document.getElementById('noPhotosToClassify').style.display = 'block';
-    document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！';
-    document.getElementById('classifyGroups').style.display = 'none';
-    document.getElementById('classifyDevices').style.display = 'none';
-    document.getElementById('classifyAbnormals').style.display = 'none';
-    btn.style.display = 'none';
-    setTimeout(function(){ goToPage(4); }, 800);
-  } else {
-    // Show "繼續下一張" button
-    hideAllClassifySections();
-    document.getElementById('currentPhotoPreview').style.display = 'none';
-    btn.disabled = false;
-    btn.textContent = '📷 繼續下一張';
-    btn.style.background = '#34c759';
-    btn.onclick = continueNextPhoto;
-  }
+  hideAllClassifySections();
+  document.getElementById('currentPhotoPreview').style.display = 'none';
+  btn.disabled = false;
+  btn.textContent = '📷 繼續下一張';
+  btn.style.background = '#34c759';
+  btn.onclick = continueNextPhoto;
 }
 
 // V6: Hide all classification section panels
