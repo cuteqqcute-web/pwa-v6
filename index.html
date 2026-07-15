@@ -1067,42 +1067,16 @@ function shareAll() {
 }
 
 function saveAll() {
-  var pr = [];
   for (var i = 0; i < _photos.length; i++) {
-    (function(p){
-      pr.push(fetch(p.dataUrl).then(function(r){return r.blob()}).then(function(b){return new File([b],p.fileName||('photo_'+(i+1)+'.jpg'),{type:'image/jpeg'})}));
-    })(_photos[i]);
+    var a = document.createElement('a');
+    a.href = _photos[i].dataUrl;
+    a.download = _photos[i].fileName || ('photo_' + (i+1) + '.jpg');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
-  Promise.all(pr).then(function(fs) {
-    if (navigator.canShare && navigator.canShare({files:fs})) {
-      navigator.share({files:fs});
-    } else if (navigator.share) {
-      // 逐一分享
-      for (var j = 0; j < fs.length; j++) {
-        navigator.share({files:[fs[j]]});
-      }
-    } else {
-      // fallback: 下載
-      for (var k = 0; k < _photos.length; k++) {
-        var a = document.createElement('a');
-        a.href = _photos[k].dataUrl;
-        a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }
-    }
-    _photos = [];
-    refreshSummaryPage();
-  }).catch(function(){
-    // fallback on error
-    for (var k = 0; k < _photos.length; k++) {
-      var a = document.createElement('a');
-      a.href = _photos[k].dataUrl;
-      a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-    _photos = [];
-    refreshSummaryPage();
-  });
+  _photos = [];
+  refreshSummaryPage();
 }
 
 // ============================================================
