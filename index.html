@@ -1226,7 +1226,7 @@ function addText() {
   if (!_cv) return;
   setTool(null);
   var t = prompt('請輸入文字：'); if (!t) return;
-  var tx = new fabric.IText(t, { left:_cv.width/2-40, top:_cv.height/2-15, fontSize:Math.max(+editorSize.value*6,12), fill:editorColor.value, fontFamily:'Arial,sans-serif' });
+  var tx = new fabric.IText(t, { left:_cv.width/2-40, top:_cv.height/2-15, fontSize:Math.max(+editorSize.value*8,18), fill:editorColor.value, fontFamily:'Arial,sans-serif' });
   _cv.add(tx); _cv.setActiveObject(tx); saveState();
 }
 
