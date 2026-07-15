@@ -899,15 +899,25 @@ function confirmClassify() {
   renderClassifyPhotoStrip();
   updateClassifyProgress();
 
-  // V6: Always show "繼續下一張" — never auto-jump to Step 4
+  // V6: Check if all photos classified — offer "完成，去預覽" if done
   var btn = document.getElementById('confirmClassifyBtn');
+  var classifiedCount = 0;
+  for (var i = 0; i < _photos.length; i++) {
+    if (_photos[i].classified) classifiedCount++;
+  }
+  var allDone = (classifiedCount === _photos.length);
 
   hideAllClassifySections();
   document.getElementById('currentPhotoPreview').style.display = 'none';
   btn.disabled = false;
-  btn.textContent = '📷 繼續下一張';
   btn.style.background = '#34c759';
-  btn.onclick = continueNextPhoto;
+  if (allDone) {
+    btn.textContent = '📋 完成，去預覽';
+    btn.onclick = function() { goToPage(4); };
+  } else {
+    btn.textContent = '📷 繼續下一張';
+    btn.onclick = continueNextPhoto;
+  }
 }
 
 // V6: Hide all classification section panels
