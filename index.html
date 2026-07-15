@@ -790,11 +790,7 @@ function buildAbnormalButtons(dn) {
   if (_currentAbnormal === '無異常') noneBtn.classList.add('selected');
   noneBtn.addEventListener('click', function(){
     _currentAbnormal = '無異常';
-    buildAbnormalButtons(dn);
-    updateConfirmButton();
-    document.getElementById('classifyAbnormalResult').style.display = 'flex';
-    document.getElementById('classifyAbnormalResult').textContent = dn + ' — 🟢 無異常';
-    document.getElementById('customAbnormalBtn').classList.remove('selected');
+    confirmClassify();
   });
   grid.appendChild(noneBtn);
 
