@@ -214,34 +214,31 @@
     </div>
     <p id="noPhotosToClassify" style="text-align:center;color:#aeaeb2;padding:20px;">沒有照片需要分類</p>
 
-    <!-- Device Group -->
-    <div class="classify-section groups" id="classifyGroups" style="display:none;margin-top:8px;">
+    <!-- Sub-page 1: 設備群組 -->
+    <div class="classify-subpage" id="classifySubpageGroups">
       <p class="section-label">📂 設備群組</p>
       <div class="group-grid" id="classifyGroupGrid"></div>
       <div class="group-result" id="classifyGroupResult" style="display:none;"></div>
     </div>
 
-    <!-- Device -->
-    <div class="classify-section devices" id="classifyDevices" style="display:none;">
+    <!-- Sub-page 2: 設備列表 -->
+    <div class="classify-subpage" id="classifySubpageDevices" style="display:none;">
       <p class="section-label">🔧 設備列表</p>
       <div class="device-grid" id="classifyDeviceGrid"></div>
       <div class="device-result" id="classifyDeviceResult" style="display:none;"></div>
+      <button class="wizard-prev-btn" style="margin-top:10px;width:100%;font-size:.8125rem;padding:8px 16px;" onclick="showClassifySubPage(1)">← 回群組列表</button>
     </div>
 
-    <!-- Abnormal -->
-    <div class="classify-section abnormals" id="classifyAbnormals" style="display:none;">
+    <!-- Sub-page 3: 異常狀態 -->
+    <div class="classify-subpage" id="classifySubpageAbnormals" style="display:none;">
       <p class="section-label">⚠️ 異常狀態</p>
       <div class="abnormal-grid" id="classifyAbnormalGrid"></div>
       <div class="abnormal-result" id="classifyAbnormalResult" style="display:none;"></div>
       <button class="custom-abnormal-btn" id="customAbnormalBtn" style="width:100%;margin-top:8px;" onclick="customAbnormal()">
         ✏️ 自訂異常說明
       </button>
+      <button class="wizard-prev-btn" style="margin-top:10px;width:100%;font-size:.8125rem;padding:8px 16px;" onclick="showClassifySubPage(2)">← 回設備列表</button>
     </div>
-
-    <!-- Confirm button -->
-    <button class="confirm-classify-btn" id="confirmClassifyBtn" disabled onclick="confirmClassify()">
-      ✓ 確認分類
-    </button>
 
     <!-- V6: 雙按鈕區 — 繼續下一張(永遠) + 完成去預覽(allDone) -->
     <div id="classifyActionBar" style="display:none; gap:10px; margin-top:8px;">
@@ -412,6 +409,7 @@ var _editPhotoIdx = -1;       // Index of photo being edited (-1 for new)
 var _editPhotoDataUrl = null; // DataUrl being edited
 var _photoSeq = 0;            // Sequence counter for genFN
 var _continueNextMode = false; // V6: flag for "繼續下一張" camera trigger
+var _classifySubPage = 1;       // V6 sub-page: 1=groups, 2=devices, 3=abnormals
 var _ini = false;
 
 // ============================================================
@@ -600,8 +598,15 @@ function editPrev() {
 }
 
 // ============================================================
-// PAGE 3: CLASSIFICATION
+// PAGE 3: CLASSIFICATION (V6: sub-page navigation)
 // ============================================================
+function showClassifySubPage(n) {
+  _classifySubPage = n;
+  document.getElementById('classifySubpageGroups').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('classifySubpageDevices').style.display = n === 2 ? 'block' : 'none';
+  document.getElementById('classifySubpageAbnormals').style.display = n === 3 ? 'block' : 'none';
+}
+
 function refreshClassifyPage() {
   renderClassifyPhotoStrip();
   updateClassifyProgress();
@@ -616,16 +621,12 @@ function refreshClassifyPage() {
     document.getElementById('currentPhotoPreview').style.display = 'none';
     document.getElementById('noPhotosToClassify').style.display = 'block';
     document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！點擊照片可重新分類';
-    document.getElementById('classifyGroups').style.display = 'none';
-    document.getElementById('classifyDevices').style.display = 'none';
-    document.getElementById('classifyAbnormals').style.display = 'none';
-    document.getElementById('confirmClassifyBtn').style.display = 'none';
+    hideAllClassifySections();
     // V6: Show action bar with both buttons
     document.getElementById('classifyActionBar').style.display = 'flex';
     document.getElementById('goToPreviewBtn').style.display = 'block';
   } else {
     document.getElementById('classifyActionBar').style.display = 'none';
-    document.getElementById('confirmClassifyBtn').style.display = 'block';
     advanceToNextUnclassified();
   }
 }
@@ -679,24 +680,19 @@ function selectClassifyPhoto(idx) {
   document.getElementById('currentPhotoImg').src = p.dataUrl;
   document.getElementById('currentPhotoLabel').textContent = '照片 #' + (idx + 1) + (p.classified ? ' (已分類 - 可重新分類)' : '');
   document.getElementById('noPhotosToClassify').style.display = 'none';
-  document.getElementById('confirmClassifyBtn').style.display = 'block';
   document.getElementById('classifyActionBar').style.display = 'none';
 
-  // Build group buttons
+  // V6: Always start at sub-page 1 (groups), build group buttons
+  showClassifySubPage(1);
   buildGroupButtons();
-  // Build device buttons if group already selected
+  // Pre-build device/abnormal buttons if already selected
   if (_currentGroupKey) {
     buildDeviceButtons(_currentGroupKey);
-  } else {
-    hideDevicesAndAbnormals();
   }
   if (_currentDevice) {
     buildAbnormalButtons(_currentDevice);
-  } else {
-    hideAbnormals();
   }
 
-  updateConfirmButton();
   renderClassifyPhotoStrip();
   updateClassifyProgress();
 }
@@ -704,7 +700,6 @@ function selectClassifyPhoto(idx) {
 function buildGroupButtons() {
   var grid = document.getElementById('classifyGroupGrid');
   grid.innerHTML = '';
-  document.getElementById('classifyGroups').style.display = 'block';
   document.getElementById('classifyGroupResult').style.display = 'none';
 
   for (var i = 0; i < DGS.length; i++) {
@@ -718,11 +713,10 @@ function buildGroupButtons() {
         _currentGroupLabel = dgs.icon + ' ' + dgs.name;
         _currentDevice = null;
         _currentAbnormal = null;
-        buildGroupButtons(); // re-render to update selection
         buildDeviceButtons(dgs.key);
-        updateConfirmButton();
         document.getElementById('classifyGroupResult').style.display = 'flex';
         document.getElementById('classifyGroupResult').textContent = '已選擇：' + _currentGroupLabel;
+        showClassifySubPage(2); // V6: navigate to device sub-page
       });
       grid.appendChild(b);
     })(DGS[i]);
@@ -734,16 +728,12 @@ function buildGroupButtons() {
 }
 
 function buildDeviceButtons(gk) {
-  var de = document.getElementById('classifyDevices');
   var grid = document.getElementById('classifyDeviceGrid');
   grid.innerHTML = '';
   var ds = DG[gk];
   if (!ds || ds.length === 0) {
-    de.style.display = 'none';
-    hideAbnormals();
     return;
   }
-  de.style.display = 'block';
   document.getElementById('classifyDeviceResult').style.display = 'none';
 
   for (var i = 0; i < ds.length; i++) {
@@ -755,11 +745,10 @@ function buildDeviceButtons(gk) {
       b.addEventListener('click', function(){
         _currentDevice = dn;
         _currentAbnormal = null;
-        buildDeviceButtons(gk); // re-render
         buildAbnormalButtons(dn);
-        updateConfirmButton();
         document.getElementById('classifyDeviceResult').style.display = 'flex';
         document.getElementById('classifyDeviceResult').textContent = '已選擇：' + dn;
+        showClassifySubPage(3); // V6: navigate to abnormal sub-page
       });
       grid.appendChild(b);
     })(ds[i]);
@@ -771,26 +760,20 @@ function buildDeviceButtons(gk) {
 }
 
 function buildAbnormalButtons(dn) {
-  var ae = document.getElementById('classifyAbnormals');
   var grid = document.getElementById('classifyAbnormalGrid');
   grid.innerHTML = '';
   var items = AT[dn];
-  if (!items || items.length === 0) {
-    ae.style.display = 'block'; // still show custom button
-  } else {
-    ae.style.display = 'block';
-  }
   document.getElementById('classifyAbnormalResult').style.display = 'none';
   document.getElementById('customAbnormalBtn').classList.remove('selected');
 
-  // V6: 🟢 無異常 button (always first)
+  // V6: 🟢 無異常 button (always first) — auto-confirm
   var noneBtn = document.createElement('button');
   noneBtn.className = 'abnormal-btn green';
   noneBtn.textContent = '🟢 無異常';
   if (_currentAbnormal === '無異常') noneBtn.classList.add('selected');
   noneBtn.addEventListener('click', function(){
     _currentAbnormal = '無異常';
-    confirmClassify();
+    confirmClassify(); // V6: auto-confirm (same as before)
   });
   grid.appendChild(noneBtn);
 
@@ -803,11 +786,7 @@ function buildAbnormalButtons(dn) {
         if (_currentAbnormal === item.label) b.classList.add('selected');
         b.addEventListener('click', function(){
           _currentAbnormal = item.label;
-          buildAbnormalButtons(dn); // re-render
-          updateConfirmButton();
-          document.getElementById('classifyAbnormalResult').style.display = 'flex';
-          document.getElementById('classifyAbnormalResult').textContent = dn + ' — ' + item.label;
-          document.getElementById('customAbnormalBtn').classList.remove('selected');
+          confirmClassify(); // V6: 修改1 — 一鍵確認
         });
         grid.appendChild(b);
       })(items[i]);
@@ -836,42 +815,13 @@ function customAbnormal() {
     alert('請先選擇設備');
     return;
   }
-  var txt = prompt('請輸入自訂異常說明：', _currentAbnormal && _currentAbnormal.indexOf('✏️') >= 0 ? _currentAbnormal : '');
+  var txt = prompt('請輸入自訂異常說明：', '');
   if (txt === null) return; // cancelled
   if (!txt.trim()) return;
   _currentAbnormal = txt.trim();
-  buildAbnormalButtons(_currentDevice);
-  updateConfirmButton();
-  document.getElementById('classifyAbnormalResult').style.display = 'flex';
-  document.getElementById('classifyAbnormalResult').textContent = _currentDevice + ' — ✏️ ' + _currentAbnormal;
-  document.getElementById('customAbnormalBtn').classList.add('selected');
+  confirmClassify(); // V6: 修改1 — 自訂異常一鍵確認
 }
 
-function hideDevicesAndAbnormals() {
-  document.getElementById('classifyDevices').style.display = 'none';
-  document.getElementById('classifyDeviceResult').style.display = 'none';
-  hideAbnormals();
-}
-
-function hideAbnormals() {
-  document.getElementById('classifyAbnormals').style.display = 'none';
-  document.getElementById('classifyAbnormalResult').style.display = 'none';
-  document.getElementById('customAbnormalBtn').classList.remove('selected');
-}
-
-function updateConfirmButton() {
-  var btn = document.getElementById('confirmClassifyBtn');
-  var ready = _currentPhotoIdx >= 0 && _currentGroupKey && _currentDevice && _currentAbnormal;
-  btn.disabled = !ready;
-  btn.onclick = confirmClassify; // V6: reset onclick in case "繼續下一張" was active
-  if (ready) {
-    btn.textContent = '✓ 確認分類';
-    btn.style.background = '#34c759';
-  } else {
-    btn.textContent = '✓ 確認分類（請先選擇群組、設備、異常）';
-    btn.style.background = '#0071e3';
-  }
-}
 
 function updateClassifyProgress() {
   var classified = 0;
@@ -920,8 +870,7 @@ function confirmClassify() {
   hideAllClassifySections();
   document.getElementById('currentPhotoPreview').style.display = 'none';
 
-  // Hide the initial confirm button, show dual-button action bar
-  document.getElementById('confirmClassifyBtn').style.display = 'none';
+  // V6: Show dual-button action bar
   var actionBar = document.getElementById('classifyActionBar');
   actionBar.style.display = 'flex';
 
@@ -935,14 +884,11 @@ function confirmClassify() {
   previewBtn.style.display = allDone ? 'block' : 'none';
 }
 
-// V6: Hide all classification section panels
+// V6: Hide all classification sub-pages
 function hideAllClassifySections() {
-  document.getElementById('classifyGroups').style.display = 'none';
-  document.getElementById('classifyGroupResult').style.display = 'none';
-  document.getElementById('classifyDevices').style.display = 'none';
-  document.getElementById('classifyDeviceResult').style.display = 'none';
-  document.getElementById('classifyAbnormals').style.display = 'none';
-  document.getElementById('classifyAbnormalResult').style.display = 'none';
+  document.getElementById('classifySubpageGroups').style.display = 'none';
+  document.getElementById('classifySubpageDevices').style.display = 'none';
+  document.getElementById('classifySubpageAbnormals').style.display = 'none';
 }
 
 // V6: "繼續下一張" — trigger camera for next photo
@@ -967,10 +913,7 @@ function advanceToNextUnclassified() {
     document.getElementById('currentPhotoPreview').style.display = 'none';
     document.getElementById('noPhotosToClassify').style.display = 'block';
     document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！';
-    document.getElementById('classifyGroups').style.display = 'none';
-    document.getElementById('classifyDevices').style.display = 'none';
-    document.getElementById('classifyAbnormals').style.display = 'none';
-    document.getElementById('confirmClassifyBtn').style.display = 'none';
+    hideAllClassifySections();
     renderClassifyPhotoStrip();
     updateClassifyProgress();
     setTimeout(function(){ goToPage(4); }, 800);
@@ -979,10 +922,7 @@ function advanceToNextUnclassified() {
     _currentPhotoIdx = -1;
     document.getElementById('currentPhotoPreview').style.display = 'none';
     document.getElementById('noPhotosToClassify').style.display = 'block';
-    document.getElementById('classifyGroups').style.display = 'none';
-    document.getElementById('classifyDevices').style.display = 'none';
-    document.getElementById('classifyAbnormals').style.display = 'none';
-    document.getElementById('confirmClassifyBtn').style.display = 'none';
+    hideAllClassifySections();
   }
 }
 
