@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>設備維護師日巡系統 V6</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:#f5f5f7;color:#1d1d1f;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0;-webkit-tap-highlight-color:transparent}
+    .card{background:#fff;border-radius:0;box-shadow:none;width:100%;max-width:430px;height:100vh;max-height:100vh;display:flex;flex-direction:column;padding:8px 16px;margin:0 auto;overflow:hidden}
+    h1{font-size:1.35rem;font-weight:700;margin-bottom:6px;color:#1d1d1f}
+    .subtitle{font-size:.8125rem;color:#86868b;margin-bottom:14px}
+    label{display:block;font-size:.8125rem;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    select{width:100%;padding:14px 16px;font-size:1rem;font-family:inherit;border:2px solid #e5e5ea;border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2386868b' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 16px center;appearance:none;-webkit-appearance:none;color:#1d1d1f;cursor:pointer;transition:border-color .15s ease}
+    select:focus{outline:none;border-color:#0071e3;box-shadow:0 0 0 3px rgba(0,113,227,0.15)}
+    .result{margin-top:20px;padding:16px;background:#f9f9fb;border-radius:12px;text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center}
+    .result .placeholder{color:#aeaeb2;font-size:.9375rem}
+    .result .selected{color:#1d1d1f;font-size:1.0625rem;font-weight:600}
+    .result .code{color:#86868b;font-size:.8125rem;font-weight:400;margin-left:8px}
+    .groups{margin-top:20px}
+    .groups-title,.devices-title,.abnormals-title,.camera-title{font-size:.8125rem;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+    .group-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .group-btn,.device-btn{padding:12px 8px;font-family:inherit;font-weight:500;color:#1d1d1f;background:#f9f9fb;border:2px solid #e5e5ea;border-radius:10px;cursor:pointer;transition:border-color .15s ease,background .15s ease;text-align:center;-webkit-tap-highlight-color:transparent}
+    .group-btn{font-size:.875rem;font-weight:600;padding:14px 8px;border-radius:12px}
+    .device-btn{font-size:.8125rem;word-break:break-word}
+    .group-btn:hover,.device-btn:hover{border-color:#0071e3;background:#eaf2fd}
+    .group-btn:active,.device-btn:active{background:#d0e4f9}
+    .group-btn.selected,.device-btn.selected{border-color:#0071e3;background:#0071e3;color:#fff}
+    .group-result,.device-result,.abnormal-result{margin-top:12px;padding:10px 12px;background:#f9f9fb;border-radius:12px;text-align:center;display:flex;align-items:center;justify-content:center;font-size:.875rem;color:#86868b}
+    .group-result{margin-top:16px;padding:12px;min-height:44px;font-size:.9375rem}
+    .device-result,.abnormal-result{min-height:40px}
+    .abnormal-result{color:#1d1d1f;font-weight:600}
+    .devices,.abnormals,.camera{margin-top:16px;display:none}
+    .device-grid,.abnormal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .abnormal-btn{padding:10px 8px;font-size:.8125rem;font-family:inherit;font-weight:500;color:#fff;border:2px solid transparent;border-radius:10px;cursor:pointer;transition:opacity .15s ease,transform .15s ease,box-shadow .15s ease;text-align:center;word-break:break-word;-webkit-tap-highlight-color:transparent}
+    .abnormal-btn:hover{opacity:.85}
+    .abnormal-btn:active{transform:scale(.97)}
+    .abnormal-btn.selected{box-shadow:0 0 0 3px #1d1d1f;transform:scale(1.03)}
+    .abnormal-btn.critical{background:#dc3545}
+    .abnormal-btn.high{background:#fd7e14}
+    .abnormal-btn.medium{background:#0d6efd}
+    .abnormal-btn.low{background:#6c757d}
+    .camera-actions,.export-actions{display:flex;gap:10px}
+    .camera-actions{margin-bottom:12px}
+    .export-actions{margin-top:14px;flex-wrap:wrap}
+    .camera-btn,.export-btn{flex:1;padding:12px 8px;font-size:.9375rem;font-family:inherit;font-weight:600;color:#fff;border:none;border-radius:12px;cursor:pointer;transition:opacity .15s ease;-webkit-tap-highlight-color:transparent}
+    .camera-btn{background:#0071e3}
+    .camera-btn.album,.export-btn.save{background:#34c759}
+    .export-btn.share{background:#0071e3}
+    .camera-btn:hover,.export-btn:hover{opacity:.85}
+    .camera-btn:active,.export-btn:active{opacity:.7}
+    .photo-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .photo-item{position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid #e5e5ea}
+    .photo-item img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo-item .photo-del{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;font-size:12px;line-height:22px;text-align:center;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+    footer{margin-top:auto;padding:8px 0;font-size:.75rem;color:#aeaeb2;text-align:center;flex-shrink:0}
+
+    /* Editor Overlay */
+    #editor-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,14,23,.95);display:none;flex-direction:column}
+    #editor-overlay.active{display:flex}
+    .editor-toolbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px;background:#1a1a2e;border-bottom:1px solid #2e2e4a;flex-shrink:0}
+    .tool-btn{width:100%;height:40px;border-radius:8px;border:1px solid #2e2e4a;background:#22223a;color:#fffffe;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .tool-btn.active{background:#ff8906;border-color:#ff8906;color:#000}
+    .tool-controls{display:flex;gap:8px;align-items:center;grid-column:1/-1;justify-content:center;padding-top:4px}
+    .tool-color{width:36px;height:36px;border-radius:8px;border:2px solid #2e2e4a;cursor:pointer;flex-shrink:0}
+    .tool-range{width:80px;flex-shrink:0}
+    #fabric-container{flex:1;overflow:hidden;position:relative}
+    .editor-bottom-bar{display:flex;gap:10px;padding:12px;background:#1a1a2e;border-top:1px solid #2e2e4a;flex-shrink:0}
+    .btn{padding:12px 20px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-primary{background:#ff8906;color:#000;flex:1}
+    .btn-secondary{background:#1a1a2e;color:#fffffe;border:1px solid #2e2e4a}
+    .btn-danger{background:#dc3545;color:#fff}
+
+    /* Preview Overlay */
+    #preview-overlay{position:fixed;inset:0;z-index:999;background:rgba(15,14,23,.95);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+    #preview-overlay.active{display:flex}
+    .preview-image{max-width:100%;max-height:60vh;border-radius:12px;object-fit:contain}
+    .preview-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+    .preview-btn{padding:14px 24px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer;color:#fff}
+    .preview-btn.edit-btn{background:#ff8906;color:#000}
+    .preview-btn.confirm-btn{background:#34c759}
+    .preview-btn.discard-btn{background:#dc3545}
+
+    /* Wizard Layout */
+    .wizard-progress{display:flex;justify-content:center;align-items:center;gap:10px;padding:8px 0 12px;flex-shrink:0}
+    .wiz-dot{width:10px;height:10px;border-radius:50%;background:#d2d2d7;transition:all .3s ease}
+    .wiz-dot.active{background:#0071e3;width:12px;height:12px;box-shadow:0 0 0 3px rgba(0,113,227,0.2)}
+    .wiz-dot.done{background:#34c759}
+    .wizard-page{display:none;flex:1;overflow-y:auto;flex-direction:column;padding:0 4px 8px;-webkit-overflow-scrolling:touch}
+    .wizard-page.active{display:flex}
+
+    /* V6 New: Classification page styles */
+    .classified-photo-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;flex-shrink:0;scroll-behavior:smooth}
+    .classified-photo-strip .photo-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:3px solid #e5e5ea;flex-shrink:0;cursor:pointer;transition:border-color .15s ease}
+    .classified-photo-strip .photo-thumb.active{border-color:#0071e3;box-shadow:0 0 0 2px rgba(0,113,227,0.3)}
+    .classified-photo-strip .photo-thumb.classified{border-color:#34c759}
+    .classified-photo-strip .photo-thumb img{width:100%;height:100%;object-fit:cover}
+    .classified-photo-strip .photo-thumb .check-mark{position:absolute;bottom:2px;right:2px;background:#34c759;color:#fff;width:18px;height:18px;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center}
+    .classified-photo-strip .photo-thumb .thumb-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;font-size:9px;text-align:center;padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .current-photo-preview{text-align:center;padding:8px 0;flex-shrink:0}
+    .current-photo-preview img{max-width:100%;max-height:160px;border-radius:10px;object-fit:contain;border:2px solid #e5e5ea}
+    .current-photo-label{margin-top:4px;font-size:.75rem;color:#86868b}
+
+    .classify-section{margin-top:8px}
+    .classify-section .section-label{font-size:.8125rem;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+    .custom-abnormal-btn{padding:10px 8px;font-size:.8125rem;font-family:inherit;font-weight:500;color:#86868b;background:#fff;border:2px dashed #aeaeb2;border-radius:10px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;transition:border-color .15s ease,color .15s ease}
+    .custom-abnormal-btn:hover{border-color:#0071e3;color:#0071e3}
+    .custom-abnormal-btn.selected{border-color:#0071e3;color:#0071e3;background:#eaf2fd;border-style:solid}
+
+    .confirm-classify-btn{width:100%;padding:14px;font-size:1rem;font-family:inherit;font-weight:700;color:#fff;background:#0071e3;border:none;border-radius:12px;cursor:pointer;margin-top:14px;transition:opacity .15s ease}
+    .confirm-classify-btn:disabled{opacity:.4;cursor:not-allowed}
+    .confirm-classify-btn:hover:not(:disabled){opacity:.85}
+
+    .classify-progress{text-align:center;font-size:.8125rem;color:#86868b;margin-bottom:8px;padding:6px 12px;background:#f0f8ff;border-radius:8px}
+    .classify-progress .progress-count{font-weight:700;color:#0071e3}
+
+    /* Summary page */
+    .wizard-summary{background:#f9f9fb;border-radius:12px;padding:16px;margin-bottom:16px}
+    .summary-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:.875rem;border-bottom:1px solid #e5e5ea}
+    .summary-item:last-child{border-bottom:none}
+    .summary-label{color:#86868b;font-size:.8125rem}
+    .summary-val{font-weight:600;color:#1d1d1f;text-align:right}
+    .summary-section{margin-top:16px}
+    .summary-section .section-title{font-size:.875rem;font-weight:700;color:#1d1d1f;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #0071e3}
+    .photo-summary-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f5}
+    .photo-summary-item img{width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0}
+    .photo-summary-info{flex:1;min-width:0}
+    .photo-summary-info .psi-name{font-size:.8125rem;font-weight:600;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .photo-summary-info .psi-detail{font-size:.75rem;color:#86868b}
+    .no-photos-hint{text-align:center;color:#aeaeb2;padding:20px;font-size:.875rem}
+
+    .report-status{margin-top:8px;text-align:center;font-size:.875rem;display:none;padding:10px;border-radius:8px}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Progress Dots -->
+  <div class="wizard-progress" id="wizProgress">
+    <span class="wiz-dot active" data-step="1"></span>
+    <span class="wiz-dot" data-step="2"></span>
+    <span class="wiz-dot" data-step="3"></span>
+    <span class="wiz-dot" data-step="4"></span>
+  </div>
+
+  <!-- ===== Page 1: 選餐廳 ===== -->
+  <div class="wizard-page active" id="wiz-page-1">
+    <h1>🍽️ Step 1：選擇餐廳</h1>
+    <p class="subtitle">選擇後自動進入拍照程序</p>
+
+    <label for="restaurantSelect">餐廳名稱</label>
+    <select id="restaurantSelect">
+      <option value="">— 請選擇 —</option>
+    </select>
+
+    <div class="result" id="result">
+      <span class="placeholder">尚未選擇</span>
+    </div>
+
+    <footer>pwa-v6</footer>
+  </div>
+
+  <!-- ===== Page 2: 拍照 / 編輯 ===== -->
+  <div class="wizard-page" id="wiz-page-2">
+    <h1>📸 Step 2：拍照紀錄</h1>
+    <p class="subtitle">拍照或從相簿選取，點擊照片可編輯</p>
+
+    <div class="camera" style="display:block;margin-top:0;">
+      <div class="camera-actions">
+        <label for="cameraInput" class="camera-btn" style="flex:1;display:flex;align-items:center;justify-content:center">📷 拍照</label>
+        <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none">
+        <label class="camera-btn album" style="flex:1;display:flex;align-items:center;justify-content:center">
+          🖼️ 從相簿選取
+          <input type="file" accept="image/*" id="albumInput" style="display:none">
+        </label>
+      </div>
+
+      <p id="photoHint" style="text-align:center;color:#aeaeb2;font-size:.8125rem;margin:12px 0;">尚未拍攝照片</p>
+      <div class="photo-grid" id="photoGrid"></div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button class="btn" style="flex:1;padding:12px;font-size:.9375rem;font-family:inherit;font-weight:600;color:#0071e3;background:#fff;border:2px solid #0071e3;border-radius:12px;cursor:pointer;" onclick="goToPage(1)">← 上一步</button>
+        <button class="btn btn-primary" id="gotoClassifyBtn" style="flex:1;display:none;font-family:inherit;" onclick="startClassify()">下一步：分類照片 →</button>
+      </div>
+    </div>
+
+    <footer>pwa-v6</footer>
+  </div>
+
+  <!-- ===== Page 3: 選設備 / 異常 ===== -->
+  <div class="wizard-page" id="wiz-page-3">
+    <h1>🏷️ Step 3：分類照片</h1>
+    <p class="subtitle">為每張照片選擇設備與異常狀態</p>
+
+    <!-- Photo strip -->
+    <div class="classified-photo-strip" id="classifyPhotoStrip"></div>
+
+    <!-- Progress -->
+    <div class="classify-progress" id="classifyProgress">
+      進度：<span class="progress-count" id="progressCount">0/0</span>
+    </div>
+
+    <!-- Current photo preview -->
+    <div class="current-photo-preview" id="currentPhotoPreview" style="display:none;">
+      <img id="currentPhotoImg" src="" alt="當前照片">
+      <div class="current-photo-label" id="currentPhotoLabel"></div>
+    </div>
+    <p id="noPhotosToClassify" style="text-align:center;color:#aeaeb2;padding:20px;">沒有照片需要分類</p>
+
+    <!-- Device Group -->
+    <div class="classify-section groups" id="classifyGroups" style="display:none;margin-top:8px;">
+      <p class="section-label">📂 設備群組</p>
+      <div class="group-grid" id="classifyGroupGrid"></div>
+      <div class="group-result" id="classifyGroupResult" style="display:none;"></div>
+    </div>
+
+    <!-- Device -->
+    <div class="classify-section devices" id="classifyDevices" style="display:none;">
+      <p class="section-label">🔧 設備列表</p>
+      <div class="device-grid" id="classifyDeviceGrid"></div>
+      <div class="device-result" id="classifyDeviceResult" style="display:none;"></div>
+    </div>
+
+    <!-- Abnormal -->
+    <div class="classify-section abnormals" id="classifyAbnormals" style="display:none;">
+      <p class="section-label">⚠️ 異常狀態</p>
+      <div class="abnormal-grid" id="classifyAbnormalGrid"></div>
+      <div class="abnormal-result" id="classifyAbnormalResult" style="display:none;"></div>
+      <button class="custom-abnormal-btn" id="customAbnormalBtn" style="width:100%;margin-top:8px;" onclick="customAbnormal()">
+        ✏️ 自訂異常說明
+      </button>
+    </div>
+
+    <!-- Confirm button -->
+    <button class="confirm-classify-btn" id="confirmClassifyBtn" disabled onclick="confirmClassify()">
+      ✓ 確認分類
+    </button>
+
+    <footer>pwa-v6</footer>
+  </div>
+
+  <!-- ===== Page 4: 匯出報告 ===== -->
+  <div class="wizard-page" id="wiz-page-4">
+    <h1>📊 Step 4：匯出報告</h1>
+    <p class="subtitle">確認資料並產出日巡報告</p>
+
+    <div class="wizard-summary" id="wizardSummary">
+      <div class="summary-item"><span class="summary-label">餐廳</span><span class="summary-val" id="sumRestaurant">—</span></div>
+      <div class="summary-item"><span class="summary-label">照片總數</span><span class="summary-val" id="sumPhotos">0</span></div>
+      <div class="summary-item"><span class="summary-label">已分類</span><span class="summary-val" id="sumClassified" style="color:#34c759;">0</span></div>
+    </div>
+
+    <div class="summary-section" id="photoSummarySection">
+      <p class="section-title">📋 分類明細</p>
+      <div id="photoSummaryList"></div>
+    </div>
+
+    <div class="export-actions" id="exportActions" style="display:flex;">
+      <button class="export-btn share" id="shareAllBtn">📤 分享全部</button>
+      <button class="export-btn save" id="saveAllBtn">💾 儲存到相簿</button>
+    </div>
+    <div class="export-actions" id="reportActions" style="display:flex;">
+      <button class="export-btn" id="generateReportBtn" style="background:#ff9500;flex:1;">📊 產出日巡報告</button>
+    </div>
+    <div class="report-status" id="reportStatus"></div>
+
+    <div style="padding:12px 0 8px;display:flex;justify-content:center;">
+      <button class="btn" style="padding:11px 28px;font-size:.9375rem;font-family:inherit;font-weight:600;color:#0071e3;background:#fff;border:2px solid #0071e3;border-radius:12px;cursor:pointer;" onclick="goToPage(3)">← 上一步</button>
+    </div>
+
+    <footer>pwa-v6</footer>
+  </div>
+
+</div>
+
+<!-- Editor Overlay -->
+<div id="editor-overlay">
+  <div class="editor-toolbar">
+    <button class="tool-btn" onclick="setTool('pen')" id="btnPen">✏️</button>
+    <button class="tool-btn" onclick="setTool('line')" id="btnLine">📏</button>
+    <button class="tool-btn" onclick="setTool('arrow')" id="btnArrow">➡️</button>
+    <button class="tool-btn" onclick="addText()">📝</button>
+    <button class="tool-btn" onclick="setTool('circle')" id="btnCircle">⭕</button>
+    <button class="tool-btn" onclick="setTool('rect')" id="btnRect">□</button>
+    <button class="tool-btn" onclick="setTool('crop')" id="btnCrop">✂️</button>
+    <button class="tool-btn" onclick="undo()">↩️</button>
+  </div>
+  <div class="tool-controls">
+    <input type="color" id="editorColor" value="#ff0000" class="tool-color">
+    <input type="range" id="editorSize" min="1" max="20" value="4" class="tool-range">
+  </div>
+  <div id="fabric-container"></div>
+  <div class="editor-bottom-bar">
+    <button class="btn btn-secondary" onclick="closeEditor()">✕ 取消</button>
+    <button class="btn btn-primary" onclick="saveEditor()">✓ 完成</button>
+  </div>
+</div>
+
+<!-- Preview Overlay -->
+<div id="preview-overlay">
+  <img id="previewImage" class="preview-image" src="" alt="預覽">
+  <div class="preview-actions">
+    <button class="preview-btn edit-btn" onclick="editPrev()">✏️ 編輯</button>
+    <button class="preview-btn confirm-btn" onclick="keepPhoto()">✓ 加入</button>
+    <button class="preview-btn discard-btn" onclick="tossPhoto()">✕ 捨棄</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA (from V2)
+// ============================================================
+var RS = [
+  { code:'S012', name:'永和' },{ code:'S022', name:'新店北新一' },{ code:'S085', name:'永和中正' },
+  { code:'S099', name:'中和' },{ code:'S133', name:'新店北新二' },{ code:'S197', name:'新店安康' },
+  { code:'S203', name:'中和中山' },{ code:'S209', name:'中和興南' },{ code:'S242', name:'永和得和' },
+  { code:'S257', name:'永和中山' },{ code:'S356', name:'永和永安' },{ code:'S446', name:'板橋府中' },
+  { code:'S471', name:'中和景新' },{ code:'S490', name:'新店中正二' },{ code:'S510', name:'新店中正三' },
+  { code:'S569', name:'永和永利' },{ code:'S600', name:'新店北新三' },{ code:'S620', name:'中和建一' }
+];
+
+var DG = {
+  fry:['高效預熱機/保溫箱','炸雞保溫箱','高效能麵包機','炸爐(炸區&炸雞區)','炸爐(薯站)','煎爐'],
+  cold:['煎區肉櫃冰箱','炸區掛式(左)','工作檯冰箱/炸區掛式(右)','調理台下方冰箱','服務區冷藏冰箱','冷凍庫','冷藏庫','冷凍薯條分配器'],
+  freeze:['室外機 冷凍冷藏製冰飲料','聖代機','製冰機'],
+  hvac:['HVAC 室外機','HVAC 溫控檢視','HVAC 濾網'],
+  drain:['排煙設備','截油槽','截油分配器','陰井'],
+  clean:['清洗機','照明&廚房設備'],
+  tool:['開罐器','蕃茄切片器'],
+  safety:['CO2 偵測器','瓦斯遮斷閥','病媒'],
+  other:['其他','資料整理']
+};
+
+var DGS = [
+  { name:'油炸區', key:'fry', icon:'🔥' },{ name:'冷藏區', key:'cold', icon:'❄️' },
+  { name:'冷凍製冰', key:'freeze', icon:'🧊' },{ name:'空調HVAC', key:'hvac', icon:'🌬️' },
+  { name:'排汙水處理', key:'drain', icon:'💧' },{ name:'清洗設備', key:'clean', icon:'🧼' },
+  { name:'刀具器具', key:'tool', icon:'🔪' },{ name:'安全偵測', key:'safety', icon:'⚠️' },
+  { name:'其他', key:'other', icon:'📋' }
+];
+
+var AT = {
+  '高效預熱機/保溫箱':[{label:'密封條破損',severity:'high'},{label:'門無法密合',severity:'high'},{label:'出水異常',severity:'medium'},{label:'箱體破損',severity:'high'}],
+  '炸雞保溫箱':[{label:'密封條破損',severity:'high'},{label:'風扇髒污',severity:'medium'},{label:'調節閥刻度不正確',severity:'medium'},{label:'門軸歪斜',severity:'high'}],
+  '高效能麵包機':[{label:'寬度旋鈕錯誤',severity:'medium'},{label:'鐵氟龍破損',severity:'high'},{label:'傳送帶髒污',severity:'medium'},{label:'風扇髒污',severity:'medium'}],
+  '炸爐(炸區&炸雞區)':[{label:'瓦斯漏氣',severity:'critical'},{label:'油網髒污',severity:'medium'},{label:'背板積垢',severity:'medium'},{label:'集油槽堵塞',severity:'medium'},{label:'油車不潔',severity:'low'},{label:'大金剛斷裂',severity:'high'}],
+  '炸爐(薯站)':[{label:'瓦斯漏氣',severity:'critical'},{label:'油網髒污',severity:'medium'},{label:'背板積垢',severity:'medium'},{label:'大金剛斷裂',severity:'high'}],
+  '煎爐':[{label:'抬板積垢',severity:'medium'},{label:'煙罩效能不足',severity:'high'},{label:'瓦斯管問題',severity:'high'},{label:'密封條破損',severity:'medium'}],
+  '煎區肉櫃冰箱':[{label:'上蓋未密合',severity:'high'},{label:'鰭片髒污',severity:'medium'},{label:'滴水盤積水',severity:'medium'}],
+  '炸區掛式(左)':[{label:'門墊圈破損',severity:'high'},{label:'結霜過多',severity:'medium'},{label:'鰭片髒污',severity:'medium'}],
+  '工作檯冰箱/炸區掛式(右)':[{label:'門墊圈破損',severity:'high'},{label:'結霜',severity:'medium'},{label:'鰭片髒污',severity:'medium'}],
+  '調理台下方冰箱':[{label:'門墊圈破損',severity:'high'},{label:'鰭片髒污',severity:'medium'},{label:'滴水盤積水',severity:'medium'}],
+  '服務區冷藏冰箱':[{label:'門墊圈破損',severity:'high'},{label:'結霜',severity:'medium'},{label:'鰭片髒污',severity:'medium'}],
+  '冷凍庫':[{label:'鰭片結冰',severity:'high'},{label:'排水管問題',severity:'medium'},{label:'門墊圈破損',severity:'high'},{label:'貨物堆疊不當',severity:'medium'}],
+  '冷藏庫':[{label:'鰭片結冰',severity:'high'},{label:'門墊圈破損',severity:'high'},{label:'排水管',severity:'medium'}],
+  '冷凍薯條分配器':[{label:'濾網髒污',severity:'medium'},{label:'門墊圈破損',severity:'high'}],
+  '室外機 冷凍冷藏製冰飲料':[{label:'鰭片髒污',severity:'high'},{label:'風扇異常',severity:'high'},{label:'除霜鐘異常',severity:'high'}],
+  '聖代機':[{label:'濾網髒污',severity:'medium'},{label:'滴盤髒污',severity:'low'},{label:'攪拌器晃動',severity:'medium'}],
+  '製冰機':[{label:'冰盤髒污',severity:'medium'},{label:'儲槽髒污',severity:'medium'},{label:'冰層異常',severity:'medium'}],
+  'HVAC 室外機':[{label:'外部鏽蝕',severity:'medium'},{label:'面板鬆脫',severity:'medium'},{label:'鰭片髒污',severity:'high'}],
+  'HVAC 溫控檢視':[{label:'用餐區過冷',severity:'medium'},{label:'用餐區過熱',severity:'medium'},{label:'廚房區過熱',severity:'medium'},{label:'溫控器故障',severity:'high'}],
+  'HVAC 濾網':[{label:'回風濾網髒污',severity:'medium'},{label:'空調箱濾網',severity:'high'},{label:'外氣入口',severity:'medium'}],
+  '排煙設備':[{label:'風扇異常',severity:'high'},{label:'帆布破損',severity:'high'},{label:'集油過多',severity:'medium'},{label:'風罩破洞',severity:'medium'}],
+  '截油槽':[{label:'吸油棉未換',severity:'medium'},{label:'內部髒污',severity:'medium'},{label:'戶外阻塞',severity:'high'}],
+  '截油分配器':[{label:'化油劑不足',severity:'medium'},{label:'分配器故障',severity:'high'},{label:'軟管脫落',severity:'medium'}],
+  '陰井':[{label:'浮油過多',severity:'medium'},{label:'水管阻塞',severity:'high'}],
+  '清洗機':[{label:'淋臂水垢',severity:'medium'},{label:'濾板髒污',severity:'medium'},{label:'滑門未關',severity:'low'}],
+  '照明&廚房設備':[{label:'開關機表未更新',severity:'medium'},{label:'管理組不了解',severity:'medium'},{label:'設備未按時開關',severity:'medium'}],
+  '開罐器':[{label:'刀片髒污',severity:'low'},{label:'開罐不良',severity:'medium'},{label:'推把鬆脫',severity:'medium'}],
+  '蕃茄切片器':[{label:'缺止滑墊',severity:'medium'},{label:'缺插銷',severity:'medium'},{label:'刀片變形',severity:'high'},{label:'缺件',severity:'medium'}],
+  'CO2 偵測器':[{label:'無亮燈',severity:'critical'},{label:'未維護',severity:'medium'},{label:'員工不了解',severity:'medium'}],
+  '瓦斯遮斷閥':[{label:'無亮燈',severity:'critical'},{label:'遮斷閥異常',severity:'critical'},{label:'BYPASS未關',severity:'high'}],
+  '病媒':[{label:'捕蠅燈異常',severity:'medium'},{label:'環境髒污',severity:'medium'},{label:'門窗破損',severity:'high'}],
+  '其他':[{label:'有建議事項',severity:'low'}],
+  '資料整理':[]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+var _restaurant = null;       // Selected restaurant {code, name}
+var _photos = [];             // [{ dataUrl, fileName, groupKey, groupLabel, device, abnormal, classified }]
+var _currentPhotoIdx = -1;    // Currently classifying photo index
+var _currentGroupKey = null;  // Currently selected group
+var _currentGroupLabel = null;
+var _currentDevice = null;    // Currently selected device
+var _currentAbnormal = null;  // Currently selected abnormal label
+var _pendingDataUrl = null;   // Photo waiting in preview
+var _editPhotoIdx = -1;       // Index of photo being edited (-1 for new)
+var _editPhotoDataUrl = null; // DataUrl being edited
+var _photoSeq = 0;            // Sequence counter for genFN
+var _ini = false;
+
+// ============================================================
+// WIZARD NAVIGATION
+// ============================================================
+var _wizPage = 1;
+function goToPage(n) {
+  _wizPage = n;
+  var pages = document.querySelectorAll('.wizard-page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  var p = document.getElementById('wiz-page-' + n);
+  if (p) p.classList.add('active');
+
+  // Progress dots
+  var dots = document.querySelectorAll('.wiz-dot');
+  for (var j = 0; j < dots.length; j++) {
+    var s = parseInt(dots[j].getAttribute('data-step'), 10);
+    dots[j].classList.remove('active', 'done');
+    if (s < n) dots[j].classList.add('done');
+    if (s === n) dots[j].classList.add('active');
+  }
+
+  // Page-specific setup
+  if (n === 3) refreshClassifyPage();
+  if (n === 4) refreshSummaryPage();
+}
+
+// ============================================================
+// PAGE 1: RESTAURANT SELECTION
+// ============================================================
+function initRestaurant() {
+  var s = document.getElementById('restaurantSelect');
+  for (var i = 0; i < RS.length; i++) {
+    var o = document.createElement('option');
+    o.value = RS[i].code;
+    o.textContent = RS[i].code + ' ' + RS[i].name;
+    s.appendChild(o);
+  }
+}
+
+function onRestaurantChange() {
+  var s = document.getElementById('restaurantSelect');
+  var code = s.value;
+  var re = document.getElementById('result');
+  if (!code) {
+    re.innerHTML = '<span class="placeholder">尚未選擇</span>';
+    _restaurant = null;
+    return;
+  }
+  for (var i = 0; i < RS.length; i++) {
+    if (RS[i].code === code) {
+      _restaurant = RS[i];
+      re.innerHTML = '<span class="selected">' + _restaurant.name + '</span><span class="code">' + _restaurant.code + '</span>';
+      // Auto-jump to Step 2
+      setTimeout(function(){ goToPage(2); }, 400);
+      return;
+    }
+  }
+}
+
+// ============================================================
+// PAGE 2: PHOTO CAPTURE & EDITOR
+// ============================================================
+function onFileInput(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    _pendingDataUrl = ev.target.result;
+    _editPhotoIdx = -1;
+    document.getElementById('previewImage').src = _pendingDataUrl;
+    document.getElementById('preview-overlay').classList.add('active');
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+}
+
+function keepPhoto() {
+  document.getElementById('preview-overlay').classList.remove('active');
+  if (_editPhotoIdx >= 0) {
+    // Editing existing photo
+    _photos[_editPhotoIdx].dataUrl = _pendingDataUrl;
+  } else {
+    // New photo
+    _photos.push({ dataUrl: _pendingDataUrl, fileName: '', groupKey: null, groupLabel: null, device: null, abnormal: null, classified: false });
+  }
+  _pendingDataUrl = null;
+  _editPhotoIdx = -1;
+  renderPhotoGrid();
+}
+
+function tossPhoto() {
+  document.getElementById('preview-overlay').classList.remove('active');
+  _pendingDataUrl = null;
+  _editPhotoIdx = -1;
+}
+
+function editPhoto(idx) {
+  _editPhotoIdx = idx;
+  _pendingDataUrl = _photos[idx].dataUrl;
+  document.getElementById('previewImage').src = _pendingDataUrl;
+  document.getElementById('preview-overlay').classList.add('active');
+}
+
+function deletePhoto(idx) {
+  if (confirm('確定刪除這張照片？')) {
+    _photos.splice(idx, 1);
+    renderPhotoGrid();
+  }
+}
+
+function renderPhotoGrid() {
+  var g = document.getElementById('photoGrid');
+  var hint = document.getElementById('photoHint');
+  var btn = document.getElementById('gotoClassifyBtn');
+  g.innerHTML = '';
+  if (_photos.length === 0) {
+    hint.style.display = 'block';
+    btn.style.display = 'none';
+    return;
+  }
+  hint.style.display = 'none';
+  btn.style.display = 'block';
+  for (var i = 0; i < _photos.length; i++) {
+    (function(idx){
+      var p = _photos[idx];
+      var d = document.createElement('div');
+      d.className = 'photo-item';
+      var im = document.createElement('img');
+      im.src = p.dataUrl;
+      im.title = '點擊編輯';
+      im.style.cursor = 'pointer';
+      im.addEventListener('click', function(e){ e.stopPropagation(); editPhoto(idx); });
+      d.appendChild(im);
+      var x = document.createElement('button');
+      x.className = 'photo-del';
+      x.textContent = '✕';
+      x.addEventListener('click', function(e){ e.stopPropagation(); deletePhoto(idx); });
+      d.appendChild(x);
+      g.appendChild(d);
+    })(i);
+  }
+}
+
+function startClassify() {
+  _currentPhotoIdx = -1;
+  goToPage(3);
+  // Auto-select first unclassified photo
+  advanceToNextUnclassified();
+}
+
+// ============================================================
+// Editor Overlay (triggered from preview "Edit" button)
+// ============================================================
+function editPrev() {
+  document.getElementById('preview-overlay').classList.remove('active');
+  _editPhotoDataUrl = _pendingDataUrl;
+  document.getElementById('editor-overlay').classList.add('active');
+  initEditor(_editPhotoDataUrl, 'fabric-container');
+}
+
+// ============================================================
+// PAGE 3: CLASSIFICATION
+// ============================================================
+function refreshClassifyPage() {
+  renderClassifyPhotoStrip();
+  updateClassifyProgress();
+  // If all photos are classified, show the "all done" state but don't auto-jump
+  // (user may have navigated back to reclassify)
+  var allDone = _photos.length > 0;
+  for (var i = 0; i < _photos.length; i++) {
+    if (!_photos[i].classified) { allDone = false; break; }
+  }
+  if (allDone) {
+    _currentPhotoIdx = -1;
+    document.getElementById('currentPhotoPreview').style.display = 'none';
+    document.getElementById('noPhotosToClassify').style.display = 'block';
+    document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！點擊照片可重新分類';
+    document.getElementById('classifyGroups').style.display = 'none';
+    document.getElementById('classifyDevices').style.display = 'none';
+    document.getElementById('classifyAbnormals').style.display = 'none';
+    document.getElementById('confirmClassifyBtn').style.display = 'none';
+  } else {
+    document.getElementById('confirmClassifyBtn').style.display = 'block';
+    advanceToNextUnclassified();
+  }
+}
+
+function renderClassifyPhotoStrip() {
+  var strip = document.getElementById('classifyPhotoStrip');
+  strip.innerHTML = '';
+  for (var i = 0; i < _photos.length; i++) {
+    (function(idx){
+      var p = _photos[idx];
+      var d = document.createElement('div');
+      d.className = 'photo-thumb';
+      if (idx === _currentPhotoIdx) d.classList.add('active');
+      if (p.classified) d.classList.add('classified');
+
+      var im = document.createElement('img');
+      im.src = p.dataUrl;
+      d.appendChild(im);
+
+      if (p.classified) {
+        var ck = document.createElement('span');
+        ck.className = 'check-mark';
+        ck.textContent = '✓';
+        d.appendChild(ck);
+      }
+
+      d.addEventListener('click', function(){ selectClassifyPhoto(idx); });
+      strip.appendChild(d);
+    })(i);
+  }
+}
+
+function selectClassifyPhoto(idx) {
+  _currentPhotoIdx = idx;
+  _currentGroupKey = null;
+  _currentGroupLabel = null;
+  _currentDevice = null;
+  _currentAbnormal = null;
+
+  var p = _photos[idx];
+  // Restore if already partially classified
+  if (p.groupKey) {
+    _currentGroupKey = p.groupKey;
+    _currentGroupLabel = p.groupLabel || p.groupKey;
+  }
+  if (p.device) _currentDevice = p.device;
+  if (p.abnormal) _currentAbnormal = p.abnormal;
+
+  // Show current photo
+  document.getElementById('currentPhotoPreview').style.display = 'block';
+  document.getElementById('currentPhotoImg').src = p.dataUrl;
+  document.getElementById('currentPhotoLabel').textContent = '照片 #' + (idx + 1) + (p.classified ? ' (已分類 - 可重新分類)' : '');
+  document.getElementById('noPhotosToClassify').style.display = 'none';
+  document.getElementById('confirmClassifyBtn').style.display = 'block';
+
+  // Build group buttons
+  buildGroupButtons();
+  // Build device buttons if group already selected
+  if (_currentGroupKey) {
+    buildDeviceButtons(_currentGroupKey);
+  } else {
+    hideDevicesAndAbnormals();
+  }
+  if (_currentDevice) {
+    buildAbnormalButtons(_currentDevice);
+  } else {
+    hideAbnormals();
+  }
+
+  updateConfirmButton();
+  renderClassifyPhotoStrip();
+  updateClassifyProgress();
+}
+
+function buildGroupButtons() {
+  var grid = document.getElementById('classifyGroupGrid');
+  grid.innerHTML = '';
+  document.getElementById('classifyGroups').style.display = 'block';
+  document.getElementById('classifyGroupResult').style.display = 'none';
+
+  for (var i = 0; i < DGS.length; i++) {
+    (function(dgs){
+      var b = document.createElement('button');
+      b.className = 'group-btn';
+      b.textContent = dgs.icon + ' ' + dgs.name;
+      if (_currentGroupKey === dgs.key) b.classList.add('selected');
+      b.addEventListener('click', function(){
+        _currentGroupKey = dgs.key;
+        _currentGroupLabel = dgs.icon + ' ' + dgs.name;
+        _currentDevice = null;
+        _currentAbnormal = null;
+        buildGroupButtons(); // re-render to update selection
+        buildDeviceButtons(dgs.key);
+        updateConfirmButton();
+        document.getElementById('classifyGroupResult').style.display = 'flex';
+        document.getElementById('classifyGroupResult').textContent = '已選擇：' + _currentGroupLabel;
+      });
+      grid.appendChild(b);
+    })(DGS[i]);
+  }
+  if (_currentGroupKey) {
+    document.getElementById('classifyGroupResult').style.display = 'flex';
+    document.getElementById('classifyGroupResult').textContent = '已選擇：' + _currentGroupLabel;
+  }
+}
+
+function buildDeviceButtons(gk) {
+  var de = document.getElementById('classifyDevices');
+  var grid = document.getElementById('classifyDeviceGrid');
+  grid.innerHTML = '';
+  var ds = DG[gk];
+  if (!ds || ds.length === 0) {
+    de.style.display = 'none';
+    hideAbnormals();
+    return;
+  }
+  de.style.display = 'block';
+  document.getElementById('classifyDeviceResult').style.display = 'none';
+
+  for (var i = 0; i < ds.length; i++) {
+    (function(dn){
+      var b = document.createElement('button');
+      b.className = 'device-btn';
+      b.textContent = dn;
+      if (_currentDevice === dn) b.classList.add('selected');
+      b.addEventListener('click', function(){
+        _currentDevice = dn;
+        _currentAbnormal = null;
+        buildDeviceButtons(gk); // re-render
+        buildAbnormalButtons(dn);
+        updateConfirmButton();
+        document.getElementById('classifyDeviceResult').style.display = 'flex';
+        document.getElementById('classifyDeviceResult').textContent = '已選擇：' + dn;
+      });
+      grid.appendChild(b);
+    })(ds[i]);
+  }
+  if (_currentDevice) {
+    document.getElementById('classifyDeviceResult').style.display = 'flex';
+    document.getElementById('classifyDeviceResult').textContent = '已選擇：' + _currentDevice;
+  }
+}
+
+function buildAbnormalButtons(dn) {
+  var ae = document.getElementById('classifyAbnormals');
+  var grid = document.getElementById('classifyAbnormalGrid');
+  grid.innerHTML = '';
+  var items = AT[dn];
+  if (!items || items.length === 0) {
+    ae.style.display = 'block'; // still show custom button
+  } else {
+    ae.style.display = 'block';
+  }
+  document.getElementById('classifyAbnormalResult').style.display = 'none';
+  document.getElementById('customAbnormalBtn').classList.remove('selected');
+
+  if (items) {
+    for (var i = 0; i < items.length; i++) {
+      (function(item){
+        var b = document.createElement('button');
+        b.className = 'abnormal-btn ' + item.severity;
+        b.textContent = item.label;
+        if (_currentAbnormal === item.label) b.classList.add('selected');
+        b.addEventListener('click', function(){
+          _currentAbnormal = item.label;
+          buildAbnormalButtons(dn); // re-render
+          updateConfirmButton();
+          document.getElementById('classifyAbnormalResult').style.display = 'flex';
+          document.getElementById('classifyAbnormalResult').textContent = dn + ' — ' + item.label;
+          document.getElementById('customAbnormalBtn').classList.remove('selected');
+        });
+        grid.appendChild(b);
+      })(items[i]);
+    }
+  }
+  if (_currentAbnormal && items) {
+    // Check if current abnormal matches a preset
+    var found = false;
+    for (var j = 0; j < items.length; j++) {
+      if (items[j].label === _currentAbnormal) { found = true; break; }
+    }
+    if (found) {
+      document.getElementById('classifyAbnormalResult').style.display = 'flex';
+      document.getElementById('classifyAbnormalResult').textContent = dn + ' — ' + _currentAbnormal;
+    } else {
+      // Custom abnormal
+      document.getElementById('classifyAbnormalResult').style.display = 'flex';
+      document.getElementById('classifyAbnormalResult').textContent = dn + ' — ✏️ ' + _currentAbnormal;
+      document.getElementById('customAbnormalBtn').classList.add('selected');
+    }
+  }
+}
+
+function customAbnormal() {
+  if (!_currentDevice) {
+    alert('請先選擇設備');
+    return;
+  }
+  var txt = prompt('請輸入自訂異常說明：', _currentAbnormal && _currentAbnormal.indexOf('✏️') >= 0 ? _currentAbnormal : '');
+  if (txt === null) return; // cancelled
+  if (!txt.trim()) return;
+  _currentAbnormal = txt.trim();
+  buildAbnormalButtons(_currentDevice);
+  updateConfirmButton();
+  document.getElementById('classifyAbnormalResult').style.display = 'flex';
+  document.getElementById('classifyAbnormalResult').textContent = _currentDevice + ' — ✏️ ' + _currentAbnormal;
+  document.getElementById('customAbnormalBtn').classList.add('selected');
+}
+
+function hideDevicesAndAbnormals() {
+  document.getElementById('classifyDevices').style.display = 'none';
+  document.getElementById('classifyDeviceResult').style.display = 'none';
+  hideAbnormals();
+}
+
+function hideAbnormals() {
+  document.getElementById('classifyAbnormals').style.display = 'none';
+  document.getElementById('classifyAbnormalResult').style.display = 'none';
+  document.getElementById('customAbnormalBtn').classList.remove('selected');
+}
+
+function updateConfirmButton() {
+  var btn = document.getElementById('confirmClassifyBtn');
+  var ready = _currentPhotoIdx >= 0 && _currentGroupKey && _currentDevice && _currentAbnormal;
+  btn.disabled = !ready;
+  if (ready) {
+    btn.textContent = '✓ 確認分類 — 完成後自動跳下一張';
+    btn.style.background = '#34c759';
+  } else {
+    btn.textContent = '✓ 確認分類（請先選擇群組、設備、異常）';
+    btn.style.background = '#0071e3';
+  }
+}
+
+function updateClassifyProgress() {
+  var classified = 0;
+  for (var i = 0; i < _photos.length; i++) {
+    if (_photos[i].classified) classified++;
+  }
+  document.getElementById('progressCount').textContent = classified + '/' + _photos.length;
+}
+
+function confirmClassify() {
+  if (_currentPhotoIdx < 0 || !_currentGroupKey || !_currentDevice || !_currentAbnormal) return;
+
+  var p = _photos[_currentPhotoIdx];
+  p.groupKey = _currentGroupKey;
+  p.groupLabel = _currentGroupLabel;
+  p.device = _currentDevice;
+  p.abnormal = _currentAbnormal;
+  p.classified = true;
+
+  // Generate filename
+  var rn = _restaurant ? _restaurant.name : '未知';
+  var rc = _restaurant ? _restaurant.code : 'UNKN';
+  var now = new Date();
+  var dt = now.toISOString().slice(0,10).replace(/-/g,'');
+  var tm = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+  _photoSeq++;
+  var sq = String(_photoSeq).padStart(3,'0');
+  p.fileName = rc + '_' + rn + '_' + _currentDevice.replace(/[/&]/g,'-') + '_' + _currentAbnormal.replace(/[/&]/g,'-') + '_' + dt + '_' + tm + '_' + sq + '.jpg';
+
+  // Clear current selection
+  _currentGroupKey = null;
+  _currentGroupLabel = null;
+  _currentDevice = null;
+  _currentAbnormal = null;
+
+  renderClassifyPhotoStrip();
+  updateClassifyProgress();
+
+  // Advance to next unclassified
+  advanceToNextUnclassified();
+}
+
+function advanceToNextUnclassified() {
+  // Find next unclassified photo
+  var found = false;
+  for (var i = 0; i < _photos.length; i++) {
+    if (!_photos[i].classified) {
+      selectClassifyPhoto(i);
+      found = true;
+      break;
+    }
+  }
+  if (!found && _photos.length > 0) {
+    // All classified — auto-jump to Step 4
+    _currentPhotoIdx = -1;
+    document.getElementById('currentPhotoPreview').style.display = 'none';
+    document.getElementById('noPhotosToClassify').style.display = 'block';
+    document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！';
+    document.getElementById('classifyGroups').style.display = 'none';
+    document.getElementById('classifyDevices').style.display = 'none';
+    document.getElementById('classifyAbnormals').style.display = 'none';
+    document.getElementById('confirmClassifyBtn').style.display = 'none';
+    renderClassifyPhotoStrip();
+    updateClassifyProgress();
+    setTimeout(function(){ goToPage(4); }, 800);
+  } else if (!found) {
+    // No photos at all
+    _currentPhotoIdx = -1;
+    document.getElementById('currentPhotoPreview').style.display = 'none';
+    document.getElementById('noPhotosToClassify').style.display = 'block';
+    document.getElementById('classifyGroups').style.display = 'none';
+    document.getElementById('classifyDevices').style.display = 'none';
+    document.getElementById('classifyAbnormals').style.display = 'none';
+    document.getElementById('confirmClassifyBtn').style.display = 'none';
+  }
+}
+
+// ============================================================
+// PAGE 4: SUMMARY & REPORT
+// ============================================================
+function refreshSummaryPage() {
+  var sr = document.getElementById('sumRestaurant');
+  var sp = document.getElementById('sumPhotos');
+  var sc = document.getElementById('sumClassified');
+
+  sr.textContent = _restaurant ? _restaurant.code + ' ' + _restaurant.name : '—';
+  sp.textContent = String(_photos.length);
+
+  var classified = 0;
+  for (var i = 0; i < _photos.length; i++) {
+    if (_photos[i].classified) classified++;
+  }
+  sc.textContent = String(classified);
+
+  // Build photo summary list
+  var list = document.getElementById('photoSummaryList');
+  list.innerHTML = '';
+  if (_photos.length === 0) {
+    list.innerHTML = '<div class="no-photos-hint">尚無照片</div>';
+  }
+  for (var i = 0; i < _photos.length; i++) {
+    var p = _photos[i];
+    var d = document.createElement('div');
+    d.className = 'photo-summary-item';
+    var im = document.createElement('img');
+    im.src = p.dataUrl;
+    d.appendChild(im);
+    var info = document.createElement('div');
+    info.className = 'photo-summary-info';
+    var nameEl = document.createElement('div');
+    nameEl.className = 'psi-name';
+    nameEl.textContent = p.fileName || '照片 #' + (i+1) + ' (未分類)';
+    var detail = document.createElement('div');
+    detail.className = 'psi-detail';
+    if (p.classified) {
+      detail.textContent = (p.groupLabel || '') + ' → ' + p.device + ' → ' + p.abnormal;
+    } else {
+      detail.textContent = '⚠️ 尚未分類';
+      detail.style.color = '#dc3545';
+    }
+    info.appendChild(nameEl);
+    info.appendChild(detail);
+    d.appendChild(info);
+    list.appendChild(d);
+  }
+
+  // Show/hide export
+  var ee = document.getElementById('exportActions');
+  ee.style.display = _photos.length > 0 ? 'flex' : 'none';
+}
+
+// ============================================================
+// GENFN (from V2)
+// ============================================================
+function genFN(dn, al, seq) {
+  var rn = _restaurant ? _restaurant.name : '未知';
+  var now = new Date();
+  var dt = now.toISOString().slice(0,10).replace(/-/g,'');
+  var tm = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+  var sq = String(seq).padStart(3,'0');
+  return (_restaurant ? _restaurant.code : 'UNKN') + '_' + rn + '_' + dn.replace(/[/&]/g,'-') + '_' + al + '_' + dt + '_' + tm + '_' + sq + '.jpg';
+}
+
+// ============================================================
+// SHARE & SAVE (from V2)
+// ============================================================
+function shareAll() {
+  var pr = [];
+  for (var i = 0; i < _photos.length; i++) {
+    (function(p){
+      pr.push(fetch(p.dataUrl).then(function(r){return r.blob()}).then(function(b){return new File([b],p.fileName||('photo_'+(i+1)+'.jpg'),{type:'image/jpeg'})}));
+    })(_photos[i]);
+  }
+  Promise.all(pr).then(function(fs) {
+    if (navigator.canShare && navigator.canShare({files:fs})) navigator.share({files:fs});
+    else if (navigator.share && fs.length === 1) navigator.share({files:fs});
+    else alert('此瀏覽器不支援一次分享多張照片，請個別下載');
+  }).catch(function(){ alert('分享失敗，請使用儲存功能'); });
+}
+
+function saveAll() {
+  for (var i = 0; i < _photos.length; i++) {
+    var a = document.createElement('a');
+    a.href = _photos[i].dataUrl;
+    a.download = _photos[i].fileName || ('photo_' + (i+1) + '.jpg');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+}
+
+// ============================================================
+// BEEP (from V2)
+// ============================================================
+function beep() {
+  try {
+    var ac = new (window.AudioContext || window.webkitAudioContext)();
+    var o = ac.createOscillator();
+    var g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.value = 880;
+    g.gain.value = 0.3;
+    o.connect(g); g.connect(ac.destination);
+    o.start();
+    setTimeout(function(){ o.frequency.value = 660; }, 200);
+    setTimeout(function(){ o.frequency.value = 880; }, 400);
+    setTimeout(function(){ o.frequency.value = 660; }, 600);
+    setTimeout(function(){ o.frequency.value = 1100; }, 800);
+    setTimeout(function(){ o.stop(); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 1.5); }, 1200);
+  } catch(e) {}
+}
+
+// ============================================================
+// GENERATE REPORT (from V2)
+// ============================================================
+function generateReport() {
+  var btn = document.getElementById('generateReportBtn');
+  var rs = document.getElementById('reportStatus');
+  rs.style.display = 'block';
+  rs.style.color = '#86868b';
+  rs.style.background = '#f9f9fb';
+  rs.textContent = '⏳ 報告產生中（約 2-3 分鐘），完成後有提示音...';
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = '⏳ 產生中...';
+  fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      rs.style.color = '#34c759';
+      rs.style.background = '#f0fff4';
+      rs.textContent = '✅ 報告已產出！';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '📊 產出日巡報告';
+      beep();
+      if (d.reportUrl) window.open(d.reportUrl, '_blank');
+    })
+    .catch(function(){
+      rs.style.color = '#dc3545';
+      rs.style.background = '#fff0f0';
+      rs.textContent = '❌ 報告產出失敗，請確認照片已上傳到「當日待分類相片」資料夾';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '📊 產出日巡報告';
+    });
+}
+
+// ============================================================
+// FABRIC.JS EDITOR (from V2)
+// ============================================================
+var _cv = null, _hist = [], _ds = null, _cr = null, _tool = null, _ts = null;
+var _tb = { pen:'btnPen', line:'btnLine', arrow:'btnArrow', circle:'btnCircle', rect:'btnRect', crop:'btnCrop' };
+
+function initEditor(url, cid) {
+  var ct = document.getElementById(cid); ct.innerHTML = '';
+  var w = Math.max(300, window.innerWidth), h = Math.max(300, window.innerHeight - 120);
+  var el = document.createElement('canvas'); el.id = 'fabric-canvas'; el.width = w; el.height = h;
+  ct.appendChild(el);
+  _cv = new fabric.Canvas(el, { width:w, height:h, backgroundColor:'#2a2a3e', isDrawingMode:false, selection:false });
+  var img = new Image();
+  img.onload = function() {
+    var s = Math.min(w/img.width, h/img.height) * 0.95;
+    var fi = new fabric.Image(img, { scaleX:s, scaleY:s, originX:'center', originY:'center', left:w/2, top:h/2 });
+    _cv.setBackgroundImage(fi, _cv.renderAll.bind(_cv));
+    saveState();
+  };
+  img.src = url;
+  _cv.on('object:modified', saveState);
+  _cv.on('path:created', function(ev) {
+    if (_tool === 'arrow') addArrow(ev);
+    ev.path.set({ selectable:false, evented:false }); saveState();
+  });
+  _cv.on('text:editing:exited', saveState);
+  _cv.on('mouse:down', function(opt) { if (!_ds && 'line,circle,rect,crop'.indexOf(_tool) >= 0) _ds = _cv.getPointer(opt.e); });
+  _cv.on('mouse:move', function(opt) {
+    if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
+    var p = _cv.getPointer(opt.e), c = editorColor.value, sz = +editorSize.value;
+    var dx = p.x - _ds.x, dy = p.y - _ds.y;
+    if (_ts) _cv.remove(_ts);
+    switch (_tool) {
+      case 'line': _ts = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); _ts = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:Math.max(side/2,5),ry:Math.max(side/2,5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'rect': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'crop': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],selectable:false,evented:false,opacity:.6}); break;
+    }
+    if (_ts) _cv.add(_ts), _cv.renderAll();
+  });
+  _cv.on('mouse:up', function(opt) {
+    if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
+    if (_ts) _cv.remove(_ts), _ts = null;
+    var p = _cv.getPointer(opt.e), dx = p.x - _ds.x, dy = p.y - _ds.y;
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) { _ds = null; return; }
+    var c = editorColor.value, sz = +editorSize.value, sh;
+    switch (_tool) {
+      case 'line': sh = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); sh = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:side/2,ry:side/2,fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'rect': sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'crop': if (_cr){_cv.remove(_cr);if(_hist.length>1)_hist.pop();} sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],hasRotatingPoint:false,selectable:true,evented:true}); _cr = sh; break;
+    }
+    _ds = null; if (sh) _cv.add(sh), saveState();
+  });
+  editorColor.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.color = this.value; };
+  editorSize.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.width = +this.value; };
+}
+
+function setTool(t) {
+  if (!_cv) return;
+  _tool = t; _ds = null;
+  var bs = document.querySelectorAll('.tool-btn');
+  for (var i = 0; i < bs.length; i++) bs[i].classList.remove('active');
+  var el = document.getElementById(_tb[t]); if (el) el.classList.add('active');
+  var dr = t === 'pen' || t === 'arrow';
+  _cv.isDrawingMode = dr;
+  _cv.selection = !dr && 'line,circle,rect,crop'.indexOf(t) < 0;
+  if (dr) { _cv.freeDrawingBrush.width = +editorSize.value; _cv.freeDrawingBrush.color = editorColor.value; }
+  if (t === 'crop' && _cr) { _cv.remove(_cr); _cr = null; }
+}
+
+function addArrow(ev) {
+  var c = editorColor.value, sz = +editorSize.value, hl = Math.max(sz*5,14);
+  ev.path.set('stroke', c); ev.path.set({ selectable:false, evented:false });
+  var pd = ev.path.path, lc = pd[pd.length-1];
+  var ex = lc[lc.length-2], ey = lc[lc.length-1], sx = ex, sy = ey;
+  for (var k = pd.length-2; k >= 0; k--) {
+    var cc = pd[k], cx = cc[cc.length-2], cy = cc[cc.length-1];
+    if (Math.hypot(ex-cx, ey-cy) > 5) { sx = cx; sy = cy; break; }
+  }
+  var dx = ex - sx, dy = ey - sy;
+  if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) { dx = 1; dy = 0; }
+  var p = ev.e ? _cv.getPointer(ev.e) : { x:ex, y:ey };
+  var tri = new fabric.Triangle({ left:p.x, top:p.y, originX:'center', originY:'center', width:hl, height:hl, angle:Math.atan2(dy,dx)*180/Math.PI+90, fill:c, selectable:false, evented:false });
+  _cv.add(tri);
+}
+
+function addText() {
+  if (!_cv) return;
+  setTool(null);
+  var t = prompt('請輸入文字：'); if (!t) return;
+  var tx = new fabric.IText(t, { left:_cv.width/2-40, top:_cv.height/2-15, fontSize:Math.max(+editorSize.value*6,12), fill:editorColor.value, fontFamily:'Arial,sans-serif' });
+  _cv.add(tx); _cv.setActiveObject(tx); saveState();
+}
+
+function saveState() {
+  if (!_cv) return;
+  if (_hist.length > 30) _hist.shift();
+  _hist.push(JSON.stringify(_cv.toJSON(['backgroundImage'])));
+}
+
+function undo() {
+  if (!_cv || _hist.length <= 1) return;
+  if (_cr) { _cv.remove(_cr); _cr = null; }
+  _hist.pop();
+  var bg = _editPhotoDataUrl;
+  _cv.loadFromJSON(JSON.parse(_hist[_hist.length-1]), function() {
+    _cv.getObjects().forEach(function(o){ o.set({ selectable:false, evented:false }); });
+    if (bg && !_cv.backgroundImage) {
+      var w = _cv.width, h = _cv.height;
+      fabric.Image.fromURL(bg, function(img) {
+        img.set({ scaleX:Math.min(w/img.width,h/img.height)*0.95, scaleY:Math.min(w/img.width,h/img.height)*0.95, originX:'center', originY:'center', left:w/2, top:h/2 });
+        _cv.setBackgroundImage(img, _cv.renderAll.bind(_cv));
+      });
+    } else _cv.renderAll();
+  });
+}
+
+function saveEditor() {
+  if (!_cv) return;
+  if (_cr) { applyCrop(function(){ doneEditing(); }); return; }
+  doneEditing();
+}
+
+function doneEditing() {
+  _pendingDataUrl = _cv.toDataURL({ format:'jpeg', quality:0.92 });
+  closeEditor();
+  // Show preview again with the edited image, then auto-keep
+  document.getElementById('previewImage').src = _pendingDataUrl;
+  keepPhoto();
+  // Auto-jump to Step 3 if this was a new photo and we're on Step 2
+  if (_wizPage === 2 && _photos.length > 0) {
+    setTimeout(function(){ startClassify(); }, 300);
+  }
+}
+
+function closeEditor() {
+  if (_cv) _cv.dispose();
+  _cv = null; _hist = []; _ds = null; _cr = null; _tool = null; _ts = null;
+  document.getElementById('editor-overlay').classList.remove('active');
+}
+
+function applyCrop(cb) {
+  if (!_cv || !_cr) { if (cb) cb(); return; }
+  var r = _cr.getBoundingRect(true);
+  _cr.visible = false; _cv.renderAll();
+  var url = _cv.toDataURL({format:'jpeg',quality:0.92});
+  _cr.visible = true; _cv.renderAll();
+  var img = new Image();
+  img.onload = function() {
+    var tc = document.createElement('canvas');
+    tc.width = Math.round(r.width); tc.height = Math.round(r.height);
+    tc.getContext('2d').drawImage(img, Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height), 0, 0, Math.round(r.width), Math.round(r.height));
+    _cv.remove(_cr); _cr = null;
+    _cv.clear(); _cv.setWidth(r.width); _cv.setHeight(r.height);
+    fabric.Image.fromURL(tc.toDataURL('image/jpeg',0.92), function(fi) {
+      fi.set({ scaleX:1, scaleY:1, originX:'center', originY:'center', left:r.width/2, top:r.height/2 });
+      _cv.setBackgroundImage(fi, function(){ _cv.renderAll(); _hist = []; saveState(); if (cb) cb(); });
+    });
+  };
+  img.src = url;
+}
+
+// ============================================================
+// BINDINGS & INIT
+// ============================================================
+function bindButtons() {
+  var ci = document.getElementById('cameraInput');
+  var ai = document.getElementById('albumInput');
+  if (ci) ci.addEventListener('change', onFileInput);
+  if (ai) ai.addEventListener('change', onFileInput);
+
+  var sb = document.getElementById('shareAllBtn');
+  var sv = document.getElementById('saveAllBtn');
+  if (sb) sb.addEventListener('click', shareAll);
+  if (sv) sv.addEventListener('click', saveAll);
+
+  var rb = document.getElementById('generateReportBtn');
+  if (rb) rb.addEventListener('click', generateReport);
+}
+
+function setup() {
+  if (_ini) return; _ini = true;
+  initRestaurant();
+  bindButtons();
+  var s = document.getElementById('restaurantSelect');
+  if (s) s.addEventListener('change', onRestaurantChange);
+}
+
+document.addEventListener('DOMContentLoaded', setup);
+</script>
+
+</body>
+</html>
