@@ -513,6 +513,11 @@ function keepPhoto() {
   else if (_wizPage === 2 && _photos.length > 0) {
     setTimeout(function(){ startClassify(); }, 300);
   }
+  // V6: Step 4 album pick → go to Step 3 for classification
+  else if (_wizPage === 4 && _photos.length > 0) {
+    _currentPhotoIdx = _photos.length - 1;
+    goToPage(3);
+  }
 }
 
 function tossPhoto() {
