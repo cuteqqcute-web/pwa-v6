@@ -243,6 +243,16 @@
       ✓ 確認分類
     </button>
 
+    <!-- V6: 雙按鈕區 — 繼續下一張(永遠) + 完成去預覽(allDone) -->
+    <div id="classifyActionBar" style="display:none; gap:10px; margin-top:8px;">
+      <button class="confirm-classify-btn" id="continueNextBtn" style="flex:1; width:auto; margin-top:0; background:#0071e3;" onclick="continueNextPhoto()">
+        📷 繼續下一張
+      </button>
+      <button class="confirm-classify-btn" id="goToPreviewBtn" style="flex:1; width:auto; margin-top:0; display:none; background:#34c759;" onclick="goToPage(4)">
+        📋 完成，去預覽
+      </button>
+    </div>
+
     <div style="padding:12px 0 8px;display:flex;justify-content:center;gap:10px;">
       <button class="wizard-prev-btn" onclick="goToPage(2)">← 上一步</button>
     </div>
@@ -610,7 +620,11 @@ function refreshClassifyPage() {
     document.getElementById('classifyDevices').style.display = 'none';
     document.getElementById('classifyAbnormals').style.display = 'none';
     document.getElementById('confirmClassifyBtn').style.display = 'none';
+    // V6: Show action bar with both buttons
+    document.getElementById('classifyActionBar').style.display = 'flex';
+    document.getElementById('goToPreviewBtn').style.display = 'block';
   } else {
+    document.getElementById('classifyActionBar').style.display = 'none';
     document.getElementById('confirmClassifyBtn').style.display = 'block';
     advanceToNextUnclassified();
   }
@@ -666,6 +680,7 @@ function selectClassifyPhoto(idx) {
   document.getElementById('currentPhotoLabel').textContent = '照片 #' + (idx + 1) + (p.classified ? ' (已分類 - 可重新分類)' : '');
   document.getElementById('noPhotosToClassify').style.display = 'none';
   document.getElementById('confirmClassifyBtn').style.display = 'block';
+  document.getElementById('classifyActionBar').style.display = 'none';
 
   // Build group buttons
   buildGroupButtons();
@@ -899,8 +914,7 @@ function confirmClassify() {
   renderClassifyPhotoStrip();
   updateClassifyProgress();
 
-  // V6: Check if all photos classified — offer "完成，去預覽" if done
-  var btn = document.getElementById('confirmClassifyBtn');
+  // V6: Always show "📷 繼續下一張"; if allDone, also show "📋 完成，去預覽"
   var classifiedCount = 0;
   for (var i = 0; i < _photos.length; i++) {
     if (_photos[i].classified) classifiedCount++;
@@ -909,15 +923,20 @@ function confirmClassify() {
 
   hideAllClassifySections();
   document.getElementById('currentPhotoPreview').style.display = 'none';
-  btn.disabled = false;
-  btn.style.background = '#34c759';
-  if (allDone) {
-    btn.textContent = '📋 完成，去預覽';
-    btn.onclick = function() { goToPage(4); };
-  } else {
-    btn.textContent = '📷 繼續下一張';
-    btn.onclick = continueNextPhoto;
-  }
+
+  // Hide the initial confirm button, show dual-button action bar
+  document.getElementById('confirmClassifyBtn').style.display = 'none';
+  var actionBar = document.getElementById('classifyActionBar');
+  actionBar.style.display = 'flex';
+
+  // 📷 繼續下一張 — always visible
+  var nextBtn = document.getElementById('continueNextBtn');
+  nextBtn.style.display = 'block';
+  nextBtn.style.background = '#0071e3';
+
+  // 📋 完成，去預覽 — only when allDone
+  var previewBtn = document.getElementById('goToPreviewBtn');
+  previewBtn.style.display = allDone ? 'block' : 'none';
 }
 
 // V6: Hide all classification section panels
