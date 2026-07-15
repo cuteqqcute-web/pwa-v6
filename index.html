@@ -1056,7 +1056,9 @@ function shareAll() {
     if (navigator.canShare && navigator.canShare({files:fs})) navigator.share({files:fs});
     else if (navigator.share && fs.length === 1) navigator.share({files:fs});
     else alert('此瀏覽器不支援一次分享多張照片，請個別下載');
-  }).catch(function(){ alert('分享失敗，請使用儲存功能'); });
+    _photos = [];
+    refreshSummaryPage();
+  }).catch(function(){ alert('分享失敗，請使用儲存功能'); _photos = []; refreshSummaryPage(); });
 }
 
 function saveAll() {
@@ -1068,6 +1070,8 @@ function saveAll() {
     a.click();
     document.body.removeChild(a);
   }
+  _photos = [];
+  refreshSummaryPage();
 }
 
 // ============================================================
