@@ -40,6 +40,7 @@
     .abnormal-btn.high{background:#fd7e14}
     .abnormal-btn.medium{background:#0d6efd}
     .abnormal-btn.low{background:#6c757d}
+    .abnormal-btn.green{background:#28a745}
     .camera-actions,.export-actions{display:flex;gap:10px}
     .camera-actions{margin-bottom:12px}
     .export-actions{margin-top:14px;flex-wrap:wrap}
@@ -399,6 +400,7 @@ var _pendingDataUrl = null;   // Photo waiting in preview
 var _editPhotoIdx = -1;       // Index of photo being edited (-1 for new)
 var _editPhotoDataUrl = null; // DataUrl being edited
 var _photoSeq = 0;            // Sequence counter for genFN
+var _continueNextMode = false; // V6: flag for "繼續下一張" camera trigger
 var _ini = false;
 
 // ============================================================
@@ -492,6 +494,23 @@ function keepPhoto() {
   _pendingDataUrl = null;
   _editPhotoIdx = -1;
   renderPhotoGrid();
+
+  // V6: Continue-next mode (triggered from "繼續下一張" on Step 3)
+  if (_continueNextMode) {
+    _continueNextMode = false;
+    if (_wizPage === 3) {
+      refreshClassifyPage();
+      if (_photos.length > 0) {
+        selectClassifyPhoto(_photos.length - 1);
+      }
+    } else {
+      startClassify();
+    }
+  }
+  // V6: Auto-jump to classify when photo added from Step 2
+  else if (_wizPage === 2 && _photos.length > 0) {
+    setTimeout(function(){ startClassify(); }, 300);
+  }
 }
 
 function tossPhoto() {
@@ -743,6 +762,21 @@ function buildAbnormalButtons(dn) {
   document.getElementById('classifyAbnormalResult').style.display = 'none';
   document.getElementById('customAbnormalBtn').classList.remove('selected');
 
+  // V6: 🟢 無異常 button (always first)
+  var noneBtn = document.createElement('button');
+  noneBtn.className = 'abnormal-btn green';
+  noneBtn.textContent = '🟢 無異常';
+  if (_currentAbnormal === '無異常') noneBtn.classList.add('selected');
+  noneBtn.addEventListener('click', function(){
+    _currentAbnormal = '無異常';
+    buildAbnormalButtons(dn);
+    updateConfirmButton();
+    document.getElementById('classifyAbnormalResult').style.display = 'flex';
+    document.getElementById('classifyAbnormalResult').textContent = dn + ' — 🟢 無異常';
+    document.getElementById('customAbnormalBtn').classList.remove('selected');
+  });
+  grid.appendChild(noneBtn);
+
   if (items) {
     for (var i = 0; i < items.length; i++) {
       (function(item){
@@ -812,8 +846,9 @@ function updateConfirmButton() {
   var btn = document.getElementById('confirmClassifyBtn');
   var ready = _currentPhotoIdx >= 0 && _currentGroupKey && _currentDevice && _currentAbnormal;
   btn.disabled = !ready;
+  btn.onclick = confirmClassify; // V6: reset onclick in case "繼續下一張" was active
   if (ready) {
-    btn.textContent = '✓ 確認分類 — 完成後自動跳下一張';
+    btn.textContent = '✓ 確認分類';
     btn.style.background = '#34c759';
   } else {
     btn.textContent = '✓ 確認分類（請先選擇群組、設備、異常）';
@@ -858,8 +893,50 @@ function confirmClassify() {
   renderClassifyPhotoStrip();
   updateClassifyProgress();
 
-  // Advance to next unclassified
-  advanceToNextUnclassified();
+  // V6: Don't auto-advance. Show "繼續下一張" button instead.
+  var allDone = true;
+  for (var i = 0; i < _photos.length; i++) {
+    if (!_photos[i].classified) { allDone = false; break; }
+  }
+
+  var btn = document.getElementById('confirmClassifyBtn');
+
+  if (allDone) {
+    // All classified — show completion
+    _currentPhotoIdx = -1;
+    document.getElementById('currentPhotoPreview').style.display = 'none';
+    document.getElementById('noPhotosToClassify').style.display = 'block';
+    document.getElementById('noPhotosToClassify').textContent = '✅ 所有照片已分類完成！';
+    document.getElementById('classifyGroups').style.display = 'none';
+    document.getElementById('classifyDevices').style.display = 'none';
+    document.getElementById('classifyAbnormals').style.display = 'none';
+    btn.style.display = 'none';
+    setTimeout(function(){ goToPage(4); }, 800);
+  } else {
+    // Show "繼續下一張" button
+    hideAllClassifySections();
+    document.getElementById('currentPhotoPreview').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '📷 繼續下一張';
+    btn.style.background = '#34c759';
+    btn.onclick = continueNextPhoto;
+  }
+}
+
+// V6: Hide all classification section panels
+function hideAllClassifySections() {
+  document.getElementById('classifyGroups').style.display = 'none';
+  document.getElementById('classifyGroupResult').style.display = 'none';
+  document.getElementById('classifyDevices').style.display = 'none';
+  document.getElementById('classifyDeviceResult').style.display = 'none';
+  document.getElementById('classifyAbnormals').style.display = 'none';
+  document.getElementById('classifyAbnormalResult').style.display = 'none';
+}
+
+// V6: "繼續下一張" — trigger camera for next photo
+function continueNextPhoto() {
+  _continueNextMode = true;
+  document.getElementById('cameraInput').click();
 }
 
 function advanceToNextUnclassified() {
@@ -1177,10 +1254,7 @@ function doneEditing() {
   // Show preview again with the edited image, then auto-keep
   document.getElementById('previewImage').src = _pendingDataUrl;
   keepPhoto();
-  // Auto-jump to Step 3 if this was a new photo and we're on Step 2
-  if (_wizPage === 2 && _photos.length > 0) {
-    setTimeout(function(){ startClassify(); }, 300);
-  }
+  // V6: Auto-jump moved to keepPhoto()
 }
 
 function closeEditor() {
