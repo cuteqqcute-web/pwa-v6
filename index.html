@@ -996,6 +996,18 @@ function genFN(dn, al, seq) {
 // SHARE & SAVE (from V2)
 // ============================================================
 function shareAll() {
+  if (_photos.length > 10) {
+    // too many files for share API, download directly
+    for (var k = 0; k < _photos.length; k++) {
+      var a = document.createElement('a');
+      a.href = _photos[k].dataUrl;
+      a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    _photos = [];
+    refreshSummaryPage();
+    return;
+  }
   var pr = [];
   for (var i = 0; i < _photos.length; i++) {
     (function(p){
@@ -1014,25 +1026,23 @@ function shareAll() {
       sharePromise.then(function(){
         _photos = [];
         refreshSummaryPage();
-      }).catch(function(){
-        // User cancelled share, keep photos
-      });
+      }).catch(function(){ alert('儲存失敗，將改為下載'); downloadFallback(); });
     } else {
-      for (var k = 0; k < _photos.length; k++) {
-        var a = document.createElement('a');
-        a.href = _photos[k].dataUrl;
-        a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }
-      _photos = [];
-      refreshSummaryPage();
+      downloadFallback();
     }
-  }).catch(function(){ alert('儲存失敗，請重試'); });
-}
+  }).catch(function(){ alert('儲存失敗，將改為下載'); downloadFallback(); });
 
-// ============================================================
-// BEEP (from V2)
-// ============================================================
+  function downloadFallback() {
+    for (var k = 0; k < _photos.length; k++) {
+      var a = document.createElement('a');
+      a.href = _photos[k].dataUrl;
+      a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    _photos = [];
+    refreshSummaryPage();
+  }
+}
 function beep() {
   try {
     var ac = new (window.AudioContext || window.webkitAudioContext)();
