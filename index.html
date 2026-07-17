@@ -1094,53 +1094,54 @@ var _tb = { pen:'btnPen', line:'btnLine', arrow:'btnArrow', circle:'btnCircle', 
 
 function initEditor(url, cid) {
   var ct = document.getElementById(cid); ct.innerHTML = '';
+  var w = Math.max(300, window.innerWidth), h = Math.max(300, window.innerHeight - 120);
+  var el = document.createElement('canvas'); el.id = 'fabric-canvas'; el.width = w; el.height = h;
+  ct.appendChild(el);
+  _cv = new fabric.Canvas(el, { width:w, height:h, backgroundColor:'#2a2a3e', isDrawingMode:false, selection:false });
   var img = new Image();
   img.onload = function() {
-    var w = img.width, h = img.height;
-    var el = document.createElement('canvas'); el.id = 'fabric-canvas'; el.width = w; el.height = h;
-    ct.appendChild(el);
-    _cv = new fabric.Canvas(el, { width:w, height:h, backgroundColor:'#2a2a3e', isDrawingMode:false, selection:false });
-    var fi = new fabric.Image(img, { scaleX:1, scaleY:1, originX:'center', originY:'center', left:w/2, top:h/2 });
+    var s = Math.min(w/img.width, h/img.height) * 0.95;
+    var fi = new fabric.Image(img, { scaleX:s, scaleY:s, originX:'center', originY:'center', left:w/2, top:h/2 });
     _cv.setBackgroundImage(fi, _cv.renderAll.bind(_cv));
     saveState();
-    _cv.on('object:modified', saveState);
-    _cv.on('path:created', function(ev) {
-      if (_tool === 'arrow') addArrow(ev);
-      ev.path.set({ selectable:false, evented:false }); saveState();
-    });
-    _cv.on('text:editing:exited', saveState);
-    _cv.on('mouse:down', function(opt) { if (!_ds && 'line,circle,rect,crop'.indexOf(_tool) >= 0) _ds = _cv.getPointer(opt.e); });
-    _cv.on('mouse:move', function(opt) {
-      if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
-      var p = _cv.getPointer(opt.e), c = editorColor.value, sz = +editorSize.value;
-      var dx = p.x - _ds.x, dy = p.y - _ds.y;
-      if (_ts) _cv.remove(_ts);
-      switch (_tool) {
-        case 'line': _ts = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
-        case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); _ts = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:Math.max(side/2,5),ry:Math.max(side/2,5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
-        case 'rect': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
-        case 'crop': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],selectable:false,evented:false,opacity:.6}); break;
-      }
-      if (_ts) _cv.add(_ts), _cv.renderAll();
-    });
-    _cv.on('mouse:up', function(opt) {
-      if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
-      if (_ts) _cv.remove(_ts), _ts = null;
-      var p = _cv.getPointer(opt.e), dx = p.x - _ds.x, dy = p.y - _ds.y;
-      if (Math.abs(dx) < 3 && Math.abs(dy) < 3) { _ds = null; return; }
-      var c = editorColor.value, sz = +editorSize.value, sh;
-      switch (_tool) {
-        case 'line': sh = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
-        case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); sh = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:side/2,ry:side/2,fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
-        case 'rect': sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
-        case 'crop': if (_cr){_cv.remove(_cr);if(_hist.length>1)_hist.pop();} sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],hasRotatingPoint:false,selectable:true,evented:true}); _cr = sh; break;
-      }
-      _ds = null; if (sh) _cv.add(sh), saveState();
-    });
-    editorColor.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.color = this.value; };
-    editorSize.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.width = +this.value; };
   };
   img.src = url;
+  _cv.on('object:modified', saveState);
+  _cv.on('path:created', function(ev) {
+    if (_tool === 'arrow') addArrow(ev);
+    ev.path.set({ selectable:false, evented:false }); saveState();
+  });
+  _cv.on('text:editing:exited', saveState);
+  _cv.on('mouse:down', function(opt) { if (!_ds && 'line,circle,rect,crop'.indexOf(_tool) >= 0) _ds = _cv.getPointer(opt.e); });
+  _cv.on('mouse:move', function(opt) {
+    if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
+    var p = _cv.getPointer(opt.e), c = editorColor.value, sz = +editorSize.value;
+    var dx = p.x - _ds.x, dy = p.y - _ds.y;
+    if (_ts) _cv.remove(_ts);
+    switch (_tool) {
+      case 'line': _ts = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); _ts = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:Math.max(side/2,5),ry:Math.max(side/2,5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'rect': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false,opacity:.6}); break;
+      case 'crop': _ts = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.max(Math.abs(dx),5),height:Math.max(Math.abs(dy),5),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],selectable:false,evented:false,opacity:.6}); break;
+    }
+    if (_ts) _cv.add(_ts), _cv.renderAll();
+  });
+  _cv.on('mouse:up', function(opt) {
+    if (!_ds || 'line,circle,rect,crop'.indexOf(_tool) < 0) return;
+    if (_ts) _cv.remove(_ts), _ts = null;
+    var p = _cv.getPointer(opt.e), dx = p.x - _ds.x, dy = p.y - _ds.y;
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) { _ds = null; return; }
+    var c = editorColor.value, sz = +editorSize.value, sh;
+    switch (_tool) {
+      case 'line': sh = new fabric.Line([_ds.x,_ds.y,p.x,p.y],{stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'circle': var side=Math.max(Math.abs(dx),Math.abs(dy)); sh = new fabric.Ellipse({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),rx:side/2,ry:side/2,fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'rect': sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'transparent',stroke:c,strokeWidth:sz,selectable:false,evented:false}); break;
+      case 'crop': if (_cr){_cv.remove(_cr);if(_hist.length>1)_hist.pop();} sh = new fabric.Rect({left:Math.min(_ds.x,p.x),top:Math.min(_ds.y,p.y),width:Math.abs(dx),height:Math.abs(dy),fill:'rgba(255,255,255,0.08)',stroke:'#ff8906',strokeWidth:2,strokeDashArray:[6,4],hasRotatingPoint:false,selectable:true,evented:true}); _cr = sh; break;
+    }
+    _ds = null; if (sh) _cv.add(sh), saveState();
+  });
+  editorColor.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.color = this.value; };
+  editorSize.oninput = function() { if (_cv && _cv.isDrawingMode) _cv.freeDrawingBrush.width = +this.value; };
 }
 
 function setTool(t) {
@@ -1196,7 +1197,7 @@ function undo() {
     if (bg && !_cv.backgroundImage) {
       var w = _cv.width, h = _cv.height;
       fabric.Image.fromURL(bg, function(img) {
-        img.set({ scaleX:1, scaleY:1, originX:'center', originY:'center', left:w/2, top:h/2 });
+        img.set({ scaleX:Math.min(w/img.width,h/img.height)*0.95, scaleY:Math.min(w/img.width,h/img.height)*0.95, originX:'center', originY:'center', left:w/2, top:h/2 });
         _cv.setBackgroundImage(img, _cv.renderAll.bind(_cv));
       });
     } else _cv.renderAll();
