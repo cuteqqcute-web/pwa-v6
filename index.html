@@ -1033,8 +1033,15 @@ function shareAllfunction shareAll() {
 
   var photos = [];
   for (var i = 0; i < _photos.length; i++) {
+    if (_photos[i].uploaded) continue;
     var b64 = _photos[i].dataUrl.split(',')[1];
     photos.push({fileName: _photos[i].fileName, data: b64});
+  }
+  if (photos.length === 0) {
+    rs.style.display = 'block'; rs.style.color = '#86868b'; rs.style.background = '#f9f9fb';
+    rs.textContent = '所有照片已上傳完畢';
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+    return;
   }
 
   fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?action=upload', {
@@ -1043,7 +1050,8 @@ function shareAllfunction shareAll() {
   }).then(function(r){ return r.json(); })
     .then(function(d){
       if (d.success) {
-        _photos = []; refreshSummaryPage();
+        for (var j = 0; j < _photos.length; j++) _photos[j].uploaded = true;
+        refreshSummaryPage();
         rs.style.display = 'block'; rs.style.color = '#34c759'; rs.style.background = '#f0fff4';
         rs.textContent = '✅ 已上傳 ' + d.saved + ' 張照片到雲端硬碟';
         btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
