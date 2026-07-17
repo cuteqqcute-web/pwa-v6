@@ -6,7 +6,7 @@
   <title>設備維護師日巡系統 V6</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:#f5f5f7;color:#1d1d1f;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;background:#f5f5f7;color:#1d1d1f;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;overscroll-behavior-x:none}
     .card{background:#fff;border-radius:0;box-shadow:none;width:100%;max-width:430px;height:100vh;max-height:100vh;display:flex;flex-direction:column;padding:8px 16px;margin:0 auto;overflow:hidden}
     h1{font-size:1.35rem;font-weight:700;margin-bottom:6px;color:#1d1d1f}
     .subtitle{font-size:.8125rem;color:#86868b;margin-bottom:14px}
@@ -57,7 +57,7 @@
     footer{margin-top:auto;padding:8px 0;font-size:.75rem;color:#aeaeb2;text-align:center;flex-shrink:0}
 
     /* Editor Overlay */
-    #editor-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,14,23,.95);display:none;flex-direction:column}
+    #editor-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,14,23,.95);display:none;flex-direction:column;touch-action:none}
     #editor-overlay.active{display:flex}
     .editor-toolbar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px;background:#1a1a2e;border-bottom:1px solid #2e2e4a;flex-shrink:0}
     .tool-btn{width:100%;height:40px;border-radius:8px;border:1px solid #2e2e4a;background:#22223a;color:#fffffe;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
