@@ -996,69 +996,36 @@ function genFN(dn, al, seq) {
 // SHARE & SAVE (from V2)
 // ============================================================
 function shareAll() {
-  if (_photos.length > 10) {
-    // too many files for share API, download directly
-    for (var k = 0; k < _photos.length; k++) {
-      var a = document.createElement('a');
-      a.href = _photos[k].dataUrl;
-      a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-    _photos = [];
-    refreshSummaryPage();
-    return;
-  }
-  var pr = [];
-  for (var i = 0; i < _photos.length; i++) {
-    (function(p){
-      pr.push(fetch(p.dataUrl).then(function(r){return r.blob()}).then(function(b){return new File([b],p.fileName||('photo_'+(i+1)+'.jpg'),{type:'image/jpeg'})}));
-    })(_photos[i]);
-  }
-  Promise.all(pr).then(function(fs) {
-    if (navigator.share) {
-      var sharePromise;
-      if (navigator.canShare && navigator.canShare({files:fs})) {
-        sharePromise = navigator.share({files:fs});
-      } else {
-        sharePromise = Promise.resolve();
-        for (var j = 0; j < fs.length; j++) sharePromise = sharePromise.then(function(){ return navigator.share({files:[fs[j]]}); });
-      }
-      sharePromise.then(function(){
-        _photos = [];
-        refreshSummaryPage();
-      }).catch(function(){ alert('儲存失敗，將改為下載'); downloadFallback(); });
-    } else {
-      downloadFallback();
-    }
-  }).catch(function(){ alert('儲存失敗，將改為下載'); downloadFallback(); });
+  var btn = document.getElementById('shareAllBtn');
+  var rs = document.getElementById('reportStatus');
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '⏳ 上傳中...';
 
-  function downloadFallback() {
-    for (var k = 0; k < _photos.length; k++) {
-      var a = document.createElement('a');
-      a.href = _photos[k].dataUrl;
-      a.download = _photos[k].fileName || ('photo_'+(k+1)+'.jpg');
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    }
-    _photos = [];
-    refreshSummaryPage();
+  var photos = [];
+  for (var i = 0; i < _photos.length; i++) {
+    var b64 = _photos[i].dataUrl.split(',')[1];
+    photos.push({fileName: _photos[i].fileName, data: b64});
   }
-}
-function beep() {
-  try {
-    var ac = new (window.AudioContext || window.webkitAudioContext)();
-    var o = ac.createOscillator();
-    var g = ac.createGain();
-    o.type = 'sine';
-    o.frequency.value = 880;
-    g.gain.value = 0.3;
-    o.connect(g); g.connect(ac.destination);
-    o.start();
-    setTimeout(function(){ o.frequency.value = 660; }, 200);
-    setTimeout(function(){ o.frequency.value = 880; }, 400);
-    setTimeout(function(){ o.frequency.value = 660; }, 600);
-    setTimeout(function(){ o.frequency.value = 1100; }, 800);
-    setTimeout(function(){ o.stop(); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 1.5); }, 1200);
-  } catch(e) {}
+
+  fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?action=upload', {
+    method: 'POST',
+    body: JSON.stringify({photos: photos})
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.success) {
+        _photos = []; refreshSummaryPage();
+        rs.style.display = 'block'; rs.style.color = '#34c759'; rs.style.background = '#f0fff4';
+        rs.textContent = '✅ 已上傳 ' + d.saved + ' 張照片到雲端硬碟';
+        btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+      } else {
+        rs.style.display = 'block'; rs.style.color = '#dc3545'; rs.style.background = '#fff0f0';
+        rs.textContent = '❌ 上傳失敗: ' + (d.error || '未知錯誤');
+        btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+      }
+    }).catch(function(err){
+      rs.style.display = 'block'; rs.style.color = '#dc3545'; rs.style.background = '#fff0f0';
+      rs.textContent = '❌ 上傳失敗，請檢查網路';
+      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+    });
 }
 
 // ============================================================
