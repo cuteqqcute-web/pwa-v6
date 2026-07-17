@@ -1094,13 +1094,13 @@ var _tb = { pen:'btnPen', line:'btnLine', arrow:'btnArrow', circle:'btnCircle', 
 
 function initEditor(url, cid) {
   var ct = document.getElementById(cid); ct.innerHTML = '';
-  var w = Math.max(1200, window.innerWidth * 2), h = Math.max(1200, (window.innerHeight - 120) * 2);
+  var w = Math.max(300, window.innerWidth), h = Math.max(300, window.innerHeight - 120);
   var el = document.createElement('canvas'); el.id = 'fabric-canvas'; el.width = w; el.height = h;
   ct.appendChild(el);
   _cv = new fabric.Canvas(el, { width:w, height:h, backgroundColor:'#2a2a3e', isDrawingMode:false, selection:false });
   var img = new Image();
   img.onload = function() {
-    var s = Math.max(w/img.width, h/img.height);
+    var s = Math.min(w/img.width, h/img.height) * 0.95;
     var fi = new fabric.Image(img, { scaleX:s, scaleY:s, originX:'center', originY:'center', left:w/2, top:h/2 });
     _cv.setBackgroundImage(fi, _cv.renderAll.bind(_cv));
     saveState();
