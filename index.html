@@ -882,6 +882,13 @@ function confirmClassify() {
   // 📋 完成，去預覽 — only when allDone
   var previewBtn = document.getElementById('goToPreviewBtn');
   previewBtn.style.display = allDone ? 'block' : 'none';
+
+  // Auto-upload every 5 classified photos
+  var unuploaded = 0;
+  for (var j = 0; j < _photos.length; j++) {
+    if (_photos[j].classified && !_photos[j].uploaded) unuploaded++;
+  }
+  if (unuploaded >= 5) autoUploadPhotos();
 }
 
 // V6: Hide all classification sub-pages
@@ -995,7 +1002,31 @@ function genFN(dn, al, seq) {
 // ============================================================
 // SHARE & SAVE (from V2)
 // ============================================================
-function shareAll() {
+// Auto-upload: silently upload classified photos to Drive in background
+function autoUploadPhotos() {
+  var toUpload = [];
+  for (var i = 0; i < _photos.length; i++) {
+    if (_photos[i].classified && !_photos[i].uploaded) {
+      var b64 = _photos[i].dataUrl.split(',')[1];
+      toUpload.push({fileName: _photos[i].fileName, data: b64});
+    }
+  }
+  if (toUpload.length === 0) return;
+
+  fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?action=upload', {
+    method: 'POST',
+    body: JSON.stringify({photos: toUpload})
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.success) {
+        for (var j = 0; j < _photos.length; j++) {
+          if (_photos[j].classified && !_photos[j].uploaded) _photos[j].uploaded = true;
+        }
+      }
+    }).catch(function(){ /* silent fail, user can manually save */ });
+}
+
+function shareAllfunction shareAll() {
   var btn = document.getElementById('shareAllBtn');
   var rs = document.getElementById('reportStatus');
   btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '⏳ 上傳中...';
