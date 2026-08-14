@@ -1122,10 +1122,8 @@ function generateReport() {
       }
     })
     .catch(function(){
-      resetReportBtn();
-      rs.style.color = '#dc3545';
-      rs.style.background = '#fff0f0';
-      rs.textContent = '❌ 連線失敗，請檢查網路後再按一次';
+      // 連線被 Google 切斷（GAS 執行超過等待上限）— GAS 後端仍在跑，改為輪詢狀態
+      pollReportStatus();
     });
 }
 
