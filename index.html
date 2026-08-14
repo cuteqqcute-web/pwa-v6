@@ -883,12 +883,12 @@ function confirmClassify() {
   var previewBtn = document.getElementById('goToPreviewBtn');
   previewBtn.style.display = allDone ? 'block' : 'none';
 
-  // Auto-upload every 5 classified photos
+  // Auto-upload every photo immediately after classification
   var unuploaded = 0;
   for (var j = 0; j < _photos.length; j++) {
     if (_photos[j].classified && !_photos[j].uploaded) unuploaded++;
   }
-  if (unuploaded >= 5) autoUploadPhotos();
+  if (unuploaded >= 1) autoUploadPhotos();
 }
 
 // V6: Hide all classification sub-pages
