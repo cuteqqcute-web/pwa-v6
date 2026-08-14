@@ -280,7 +280,7 @@
     </div>
 
     <div class="export-actions" id="exportActions" style="display:flex;">
-      <button class="export-btn share" id="shareAllBtn">💾 儲存/分享全部</button>
+      <button class="export-btn share" id="saveToAlbumBtn">💾 儲存到手機相簿</button>
     </div>
     <div class="export-actions" id="reportActions" style="display:flex;">
       <button class="export-btn" id="generateReportBtn" style="background:#ff9500;flex:1;">📊 產出日巡報告</button>
@@ -1026,45 +1026,72 @@ function autoUploadPhotos() {
     }).catch(function(){ /* silent fail, user can manually save */ });
 }
 
-function shareAll() {
-  var btn = document.getElementById('shareAllBtn');
+function saveToAlbum() {
+  var btn = document.getElementById('saveToAlbumBtn');
   var rs = document.getElementById('reportStatus');
-  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '⏳ 上傳中...';
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = '⏳ 儲存中...';
 
-  var photos = [];
+  // 收集尚未存到相簿的照片（dataUrl → File）
+  var files = [];
+  var pendingIdx = [];
   for (var i = 0; i < _photos.length; i++) {
-    if (_photos[i].uploaded) continue;
-    var b64 = _photos[i].dataUrl.split(',')[1];
-    photos.push({fileName: _photos[i].fileName, data: b64});
+    if (_photos[i].albumSaved) continue;
+    try {
+      var b64 = _photos[i].dataUrl.split(',')[1];
+      var bin = atob(b64);
+      var arr = new Uint8Array(bin.length);
+      for (var j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+      files.push(new File([arr], _photos[i].fileName, { type: 'image/jpeg' }));
+      pendingIdx.push(i);
+    } catch(e) { /* 跳過無法解析的 */ }
   }
-  if (photos.length === 0) {
+  if (files.length === 0) {
     rs.style.display = 'block'; rs.style.color = '#86868b'; rs.style.background = '#f9f9fb';
-    rs.textContent = '所有照片已上傳完畢';
-    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+    rs.textContent = '所有照片都已儲存到手機相簿';
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存到手機相簿';
     return;
   }
 
-  fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec?action=upload', {
-    method: 'POST',
-    body: JSON.stringify({photos: photos})
-  }).then(function(r){ return r.json(); })
-    .then(function(d){
-      if (d.success) {
-        for (var j = 0; j < _photos.length; j++) _photos[j].uploaded = true;
-        refreshSummaryPage();
-        rs.style.display = 'block'; rs.style.color = '#34c759'; rs.style.background = '#f0fff4';
-        rs.textContent = '✅ 已上傳 ' + d.saved + ' 張照片到雲端硬碟';
-        btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+  var markSaved = function() {
+    for (var k = 0; k < pendingIdx.length; k++) _photos[pendingIdx[k]].albumSaved = true;
+    refreshSummaryPage();
+  };
+
+  // 優先：Web Share API（可分享檔案）
+  if (navigator.canShare && navigator.canShare({ files: files })) {
+    navigator.share({ files: files, title: '日巡照片' }).then(function() {
+      markSaved();
+      rs.style.display = 'block'; rs.style.color = '#34c759'; rs.style.background = '#f0fff4';
+      rs.textContent = '✅ 已儲存 ' + files.length + ' 張照片到手機相簿';
+      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存到手機相簿';
+    }).catch(function(err) {
+      if (err && err.name === 'AbortError') {
+        rs.style.display = 'block'; rs.style.color = '#86868b'; rs.style.background = '#f9f9fb';
+        rs.textContent = '已取消儲存';
       } else {
         rs.style.display = 'block'; rs.style.color = '#dc3545'; rs.style.background = '#fff0f0';
-        rs.textContent = '❌ 上傳失敗: ' + (d.error || '未知錯誤');
-        btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+        rs.textContent = '❌ 儲存失敗: ' + (err && err.message ? err.message : '未知錯誤');
       }
-    }).catch(function(err){
-      rs.style.display = 'block'; rs.style.color = '#dc3545'; rs.style.background = '#fff0f0';
-      rs.textContent = '❌ 上傳失敗，請檢查網路';
-      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存/分享全部';
+      btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存到手機相簿';
     });
+  } else {
+    // fallback：逐張下載
+    var n = 0;
+    for (var m = 0; m < files.length; m++) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(files[m]);
+      a.download = files[m].name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      n++;
+    }
+    markSaved();
+    rs.style.display = 'block'; rs.style.color = '#34c759'; rs.style.background = '#f0fff4';
+    rs.textContent = '✅ 已下載 ' + n + ' 張照片（可在手機相簿/下載查看）';
+    btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💾 儲存到手機相簿';
+  }
 }
 
 // ============================================================
@@ -1273,8 +1300,8 @@ function bindButtons() {
   if (ai) ai.addEventListener('change', onFileInput);
   if (ai4) ai4.addEventListener('change', onFileInput);
 
-  var sb = document.getElementById('shareAllBtn');
-  if (sb) sb.addEventListener('click', shareAll);
+  var sb = document.getElementById('saveToAlbumBtn');
+  if (sb) sb.addEventListener('click', saveToAlbum);
 
   var rb = document.getElementById('generateReportBtn');
   if (rb) rb.addEventListener('click', generateReport);
