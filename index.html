@@ -1139,6 +1139,12 @@ function pollReportStatus() {
         if (d && d.done && d.reportUrl) {
           clearInterval(timer);
           showReportSuccess(d);
+        } else if (d && d.done && d.error) {
+          clearInterval(timer);
+          resetReportBtn();
+          rs.style.color = '#dc3545';
+          rs.style.background = '#fff0f0';
+          rs.textContent = '❌ 報告產出失敗：' + d.error;
         } else {
           tries++;
           if (tries >= 30) {
