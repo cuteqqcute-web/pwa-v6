@@ -1311,6 +1311,15 @@ function setup() {
   if (_ini) return; _ini = true;
   initRestaurant();
   bindButtons();
+  // 防止瀏覽器返回手勢/返回鍵離開頁面（分類資料在記憶體，離開即遺失）
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', function() {
+    history.pushState(null, null, location.href);
+  });
+  window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+  });
   var s = document.getElementById('restaurantSelect');
   if (s) s.addEventListener('change', onRestaurantChange);
 }
