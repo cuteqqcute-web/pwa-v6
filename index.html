@@ -1110,22 +1110,29 @@ function generateReport() {
   fetch('https://script.google.com/macros/s/AKfycbyo718PNpQRfjmiBjCQNyIBibgkUTLgM-mEM95HJwWOg-2h6-rK4uffvJ5sbMw3PsV5/exec')
     .then(function(r){ return r.json(); })
     .then(function(d){
-      rs.style.color = '#34c759';
-      rs.style.background = '#f0fff4';
-      rs.textContent = '✅ 報告已產出！';
       btn.disabled = false;
       btn.style.opacity = '1';
       btn.textContent = '📊 產出日巡報告';
-      beep();
-      if (d.reportUrl) window.open(d.reportUrl, '_blank');
+      if (d && d.success) {
+        rs.style.color = '#34c759';
+        rs.style.background = '#f0fff4';
+        rs.textContent = '✅ 報告已產出！';
+        beep();
+        if (d.reportUrl) window.open(d.reportUrl, '_blank');
+      } else {
+        rs.style.color = '#dc3545';
+        rs.style.background = '#fff0f0';
+        rs.textContent = '❌ 報告產出失敗：' + (d && d.error ? d.error : '未知錯誤');
+      }
     })
     .catch(function(){
-      rs.style.color = '#dc3545';
-      rs.style.background = '#fff0f0';
-      rs.textContent = '❌ 報告產出失敗，請確認照片已上傳到「當日待分類相片」資料夾';
+      // Google 前端會切斷超過等待上限的長請求；GAS 後端通常仍會跑完產生檔案
       btn.disabled = false;
       btn.style.opacity = '1';
       btn.textContent = '📊 產出日巡報告';
+      rs.style.color = '#b7791f';
+      rs.style.background = '#fffbeb';
+      rs.textContent = '⚠️ 連線逾時，但檔案可能已產生 — 請稍候 3 分鐘後到雲端硬碟確認。若未出現請再按一次。';
     });
 }
 
