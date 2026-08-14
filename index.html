@@ -1183,24 +1183,28 @@ function resetReportBtn() {
   btn.textContent = '📊 產出日巡報告';
 }
 
-// 完成提示音（安全版：任何錯誤都不影響主流程）
+// 完成提示音（最大清晰音量 + 防破音限制器）
 function beep() {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var master = ctx.createDynamicsCompressor();
+    master.threshold.value = -10;
+    master.ratio.value = 8;
+    master.connect(ctx.destination);
     var notes = [660, 880, 1320];
     var t = ctx.currentTime;
     for (var i = 0; i < notes.length; i++) {
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(master);
       osc.frequency.value = notes[i];
-      gain.gain.setValueAtTime(0.5, t + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + (i + 1) * 0.15 + 0.1);
-      osc.start(t + i * 0.15);
-      osc.stop(t + (i + 1) * 0.15 + 0.1);
+      gain.gain.setValueAtTime(1.0, t + i * 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + (i + 1) * 0.2 + 0.15);
+      osc.start(t + i * 0.2);
+      osc.stop(t + (i + 1) * 0.2 + 0.15);
     }
-  } catch(e) { /* 靜默 */ }
+  } catch(e) { }
 }
 
 // ============================================================
