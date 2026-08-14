@@ -1169,12 +1169,12 @@ function pollReportStatus() {
 
 function showReportSuccess(d) {
   var rs = document.getElementById('reportStatus');
+  resetReportBtn();
   rs.style.color = '#34c759';
   rs.style.background = '#f0fff4';
   rs.textContent = '✅ 報告已產出！';
-  beep();
+  try { beep(); } catch(e) { }
   if (d.reportUrl) window.open(d.reportUrl, '_blank');
-  resetReportBtn();
 }
 
 function resetReportBtn() {
@@ -1182,6 +1182,22 @@ function resetReportBtn() {
   btn.disabled = false;
   btn.style.opacity = '1';
   btn.textContent = '📊 產出日巡報告';
+}
+
+// 完成提示音（安全版：任何錯誤都不影響主流程）
+function beep() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) { /* 靜默 */ }
 }
 
 // ============================================================
